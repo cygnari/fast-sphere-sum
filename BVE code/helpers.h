@@ -7,7 +7,7 @@
 #include <cmath>
 #include <array>
 #include <vector>
-// #include <Accelerate/Accelerate.h>
+#include <Accelerate/Accelerate.h>
 #include <cassert>
 
 extern "C" {
@@ -406,6 +406,26 @@ void points_assign(vector<vector<vector<int>>>& tri_verts, vector<vector<double>
 
 double interp_eval(vector<double>& alphas, double s, double t) {
     return alphas[0] + alphas[1] * s + alphas[2] * t + alphas[3] * s * t + alphas[4] * s * s + alphas[5] * t * t;
+}
+
+void fekete_init(vector<vector<double>>& points, int degree) {
+    double delta_x = 1.0 / degree;
+    int index;
+    double a, b, c;
+    for (int i = 0; i < degree + 1; i++) {
+        for (int j = 0; j < degree + 1; j++) {
+            index = i * (i + 1) / 2 + j;
+            a = 1 - i * delta_x;
+            c = j * delta_x;
+            b = 1 - a - b;
+            a = 0.5 * (1 + sin(M_PI / 2 * (2 * a - 1)));
+            b = 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1)));
+            c = 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1)));
+            points[index][0] = a / (a + b + c);
+            points[index][1] = b / (a + b + c);
+            points[index][2] = c / (a + b + c);
+        }
+    }
 }
 
 #endif

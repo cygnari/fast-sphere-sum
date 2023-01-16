@@ -2,7 +2,7 @@
 #include <cmath>
 #include <array>
 #include <vector>
-// #include <Accelerate/Accelerate.h>
+#include <Accelerate/Accelerate.h>
 #include <fstream>
 #include <sstream>
 #include <queue>
@@ -40,11 +40,14 @@ void direct_sum(vector<double>& modify, vector<double>& curr_state, vector<vecto
     }
 }
 
-void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector<double>>& vertices, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, vector<vector<vector<int>>>& tri_points, double t, double delta_t, double omega, double area, int points, int levels, double radius, double theta, int many_count) {
-    vector<vector<double>> target_points {{1, 0}, {0.5, 0.5}, {0, 1}, {0, 0.5}, {0, 0}, {0.5, 0}};
-    int target_cluster_count = target_points.size();
-    vector<vector<double>> source_points {{1, 0}, {0.5, 0.5}, {0, 1}, {0, 0.5}, {0, 0}, {0.5, 0}};
-    int source_cluster_count = source_points.size();
+void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector<double>>& vertices, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, vector<vector<vector<int>>>& tri_points, double t, double delta_t, double omega, double area, int points, int levels, double radius, double theta, int many_count, int degree) {
+    // vector<vector<double>> cluster_points {{1, 0}, {0.5, 0.5}, {0, 1}, {0, 0.5}, {0, 0}, {0.5, 0}};
+    // int target_cluster_count = cluster_points.size();
+    // vector<vector<double>> cluster_points {{1, 0}, {0.5, 0.5}, {0, 1}, {0, 0.5}, {0, 0}, {0.5, 0}};
+    // int source_cluster_count = cluster_points.size();
+    int cluster_count = (degree + 1) * (degree + 2) / 2;
+    vector<vector<double>> cluster_points (cluster_count, vector<double> (3, 0));
+    fekete_init(cluster_points, degree);
     int curr_source, curr_target, lev_target, lev_source;
     int particle_count_target, particle_count_source;
     vector<double> center_target, center_source;
@@ -54,14 +57,14 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
     vector<double> v1, v2, v3, v1s, v2s, v3s;
     vector<double> bary_cord;
     int point_index;
-    vector<vector<double>> curr_points (6, vector<double> (3, 0));
-    vector<double> interptargets (18, 0);
+    vector<vector<double>> curr_points (cluster_count, vector<double> (3, 0));
+    vector<double> interptargets (3 * cluster_count, 0);
     vector<double> placeholder1, placeholder2, placeholder3, source_particle, target_particle;
     vector<double> Aimatrix {1, 1, 1, 1, 1, 1, 1, 0.5, 0, 0, 0, 0.5, 0, 0.5, 1, 0.5, 0, 0, 0, 0.25, 0, 0, 0, 0, 1, 0.25, 0, 0, 0, 0.25, 0, 0.25, 1, 0.25, 0, 0};
-    vector<double> func_vals (18, 0), func_val (3, 0);
-    vector<double> alphas_x (6, 0), alphas_y (6, 0), alphas_z (6, 0);
-    int ipiv[6];
-    int info, dim = 6, nrhs = 3;
+    vector<double> func_vals (3 * cluster_count, 0), func_val (3, 0);
+    vector<double> alphas_x (cluster_count, 0), alphas_y (cluster_count, 0), alphas_z (cluster_count, 0);
+    int ipiv[cluster_count];
+    int info, dim = cluster_count, nrhs = 3;
     char trans = 'N';
     dgetrf_(&dim, &dim, &*Aimatrix.begin(), &dim, ipiv, &info); // prefactor Ai matrix
     vector<vector<int>> tri_interactions;
@@ -98,8 +101,8 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                 v2 = vertices[iv2];
                 v3 = vertices[iv3];
                 for (int i = 0; i < 6; i++) {
-                    u = target_points[i][0];
-                    v = target_points[i][1];
+                    u = cluster_points[i][0];
+                    v = cluster_points[i][1];
                     placeholder1 = v1;
                     placeholder2 = v2;
                     placeholder3 = v3;
@@ -119,8 +122,8 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                     v3s = vertices[iv3s];
                     for (int i = 0; i < 6; i++) {
                         for (int j = 0; j < 6; j++) {
-                            us = source_points[j][0];
-                            vs = source_points[j][1];
+                            us = cluster_points[j][0];
+                            vs = cluster_points[j][1];
                             placeholder1 = v1s;
                             placeholder2 = v2s;
                             placeholder3 = v3s;
@@ -192,8 +195,8 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                         point_index = tri_points[lev_target][curr_target][i];
                         target_particle = slice(curr_state, 4 * point_index, 1, 3);
                         for (int j = 0; j < 6; j++) {
-                            us = source_points[j][0];
-                            vs = source_points[j][1];
+                            us = cluster_points[j][0];
+                            vs = cluster_points[j][1];
                             placeholder1 = v1s;
                             placeholder2 = v2s;
                             placeholder3 = v3s;
@@ -319,12 +322,12 @@ int main() {
     for (int t = 0; t < 1; t++) { // time iterate with RK4
         double curr_time = t * delta_t;
         points_assign(triangle_verts, vertices, curr_state, tri_points, point_locs, icos_levels, point_count);
-        BVE_ffunc(c_1, curr_state, vertices, triangle_info, triangle_verts, tri_points, curr_time, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count);
+        BVE_ffunc(c_1, curr_state, vertices, triangle_info, triangle_verts, tri_points, curr_time, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, 3);
         intermediate_1 = c_1;
         scalar_mult(intermediate_1, delta_t / 2);
         vec_add(intermediate_1, curr_state);
         // points_assign(triangle_verts, vertices, intermediate_1, tri_points, point_locs, icos_levels, point_count);
-        BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count);
+        BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, 3);
         intermediate_2 = c_2;
         scalar_mult(intermediate_2, delta_t / 2);
         vec_add(intermediate_2, curr_state);
