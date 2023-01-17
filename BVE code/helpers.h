@@ -428,4 +428,20 @@ void fekete_init(vector<vector<double>>& points, int degree) {
     }
 }
 
+void interp_mat_init(vector<double>& mat, vector<vector<double>>& points, int degree, int point_count) {
+    int index, place;
+    double a, b;
+    for (int i = 0; i < degree + 1; i++) {
+        for (int j = 0; j < degree + 1; j++) {
+            index = i * (i + 1) / 2 + j;
+            for (int k = 0; k < point_count; k++) {
+                a = points[k][0];
+                b = points[k][1];
+                place = index * point_count + k;
+                mat[place] = pow(a, i - j) * pow(b, j);
+            }
+        }
+    }
+}
+
 #endif

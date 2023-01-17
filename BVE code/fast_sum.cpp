@@ -40,14 +40,14 @@ void direct_sum(vector<double>& modify, vector<double>& curr_state, vector<vecto
     }
 }
 
-void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector<double>>& vertices, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, vector<vector<vector<int>>>& tri_points, double t, double delta_t, double omega, double area, int points, int levels, double radius, double theta, int many_count, int degree) {
+void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector<double>>& vertices, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, vector<vector<vector<int>>>& tri_points, double t, double delta_t, double omega, double area, int points, int levels, double radius, double theta, int many_count, int degree, vector<double>& interp_matrix, vector<vector<double>>& interp_points, int* ipiv) {
     // vector<vector<double>> cluster_points {{1, 0}, {0.5, 0.5}, {0, 1}, {0, 0.5}, {0, 0}, {0.5, 0}};
     // int target_cluster_count = cluster_points.size();
     // vector<vector<double>> cluster_points {{1, 0}, {0.5, 0.5}, {0, 1}, {0, 0.5}, {0, 0}, {0.5, 0}};
     // int source_cluster_count = cluster_points.size();
     int cluster_count = (degree + 1) * (degree + 2) / 2;
-    vector<vector<double>> cluster_points (cluster_count, vector<double> (3, 0));
-    fekete_init(cluster_points, degree);
+    // vector<vector<double>> cluster_points (cluster_count, vector<double> (3, 0));
+    // fekete_init(cluster_points, degree);
     int curr_source, curr_target, lev_target, lev_source;
     int particle_count_target, particle_count_source;
     vector<double> center_target, center_source;
@@ -60,13 +60,16 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
     vector<vector<double>> curr_points (cluster_count, vector<double> (3, 0));
     vector<double> interptargets (3 * cluster_count, 0);
     vector<double> placeholder1, placeholder2, placeholder3, source_particle, target_particle;
-    vector<double> Aimatrix {1, 1, 1, 1, 1, 1, 1, 0.5, 0, 0, 0, 0.5, 0, 0.5, 1, 0.5, 0, 0, 0, 0.25, 0, 0, 0, 0, 1, 0.25, 0, 0, 0, 0.25, 0, 0.25, 1, 0.25, 0, 0};
+    // vector<double> Aimatrix {1, 1, 1, 1, 1, 1, 1, 0.5, 0, 0, 0, 0.5, 0, 0.5, 1, 0.5, 0, 0, 0, 0.25, 0, 0, 0, 0, 1, 0.25, 0, 0, 0, 0.25, 0, 0.25, 1, 0.25, 0, 0};
+    // vector<double> Aimatrix (cluster_count * cluster_count, 0);
+    // interp_mat_init(Aimatrix, cluster_points, degree, cluster_count);
     vector<double> func_vals (3 * cluster_count, 0), func_val (3, 0);
     vector<double> alphas_x (cluster_count, 0), alphas_y (cluster_count, 0), alphas_z (cluster_count, 0);
-    int ipiv[cluster_count];
-    int info, dim = cluster_count, nrhs = 3;
+    // int ipiv[cluster_count];
+    // int info, dim = cluster_count, nrhs = 3;
+    int nrhs = 3, dim = cluster_count, info;
     char trans = 'N';
-    dgetrf_(&dim, &dim, &*Aimatrix.begin(), &dim, ipiv, &info); // prefactor Ai matrix
+    // dgetrf_(&dim, &dim, &*Aimatrix.begin(), &dim, ipiv, &info); // prefactor Ai matrix
     vector<vector<int>> tri_interactions;
     vector<int> curr_interact {0, 0, 0, 0};
     for (int i = 0; i < 20; i++) { // queue of triangle pairs to interact
@@ -100,9 +103,9 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                 v1 = vertices[iv1];
                 v2 = vertices[iv2];
                 v3 = vertices[iv3];
-                for (int i = 0; i < 6; i++) {
-                    u = cluster_points[i][0];
-                    v = cluster_points[i][1];
+                for (int i = 0; i < cluster_count; i++) {
+                    u = interp_points[i][0];
+                    v = interp_points[i][1];
                     placeholder1 = v1;
                     placeholder2 = v2;
                     placeholder3 = v3;
@@ -120,10 +123,10 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                     v1s = vertices[iv1s];
                     v2s = vertices[iv2s];
                     v3s = vertices[iv3s];
-                    for (int i = 0; i < 6; i++) {
-                        for (int j = 0; j < 6; j++) {
-                            us = cluster_points[j][0];
-                            vs = cluster_points[j][1];
+                    for (int i = 0; i < cluster_count; i++) {
+                        for (int j = 0; j < cluster_count; j++) {
+                            us = interp_points[j][0];
+                            vs = interp_points[j][1];
                             placeholder1 = v1s;
                             placeholder2 = v2s;
                             placeholder3 = v3s;
@@ -133,28 +136,28 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                             vec_add(placeholder1, placeholder2);
                             vec_add(placeholder1, placeholder3);
                             func_val = BVE_gfunc(curr_points[i], placeholder1);
-                            for (int k = 0; k < 3; k++) func_vals[j + 6 * k] = func_val[k];
+                            for (int k = 0; k < 3; k++) func_vals[j + cluster_count * k] = func_val[k];
                         }
-                        dgetrs_(&trans, &dim, &nrhs, &*Aimatrix.begin(), &dim, ipiv, &*func_vals.begin(), &dim, &info);
-                        for (int j = 0; j < 6; j++) {
+                        dgetrs_(&trans, &dim, &nrhs, &*interp_matrix.begin(), &dim, ipiv, &*func_vals.begin(), &dim, &info);
+                        for (int j = 0; j < cluster_count; j++) {
                             alphas_x[j] = func_vals[j];
-                            alphas_y[j] = func_vals[j+6];
-                            alphas_z[j] = func_vals[j+12];
+                            alphas_y[j] = func_vals[j + cluster_count];
+                            alphas_z[j] = func_vals[j + 2 * cluster_count];
                         }
 
                         for (int j = 0; j < interptargets.size(); j++) interptargets[j] = 0;
 
-                        for (int j = 0; j < 6; j++) {
+                        for (int j = 0; j < cluster_count; j++) {
                             point_index = tri_points[lev_source][curr_source][j];
                             source_particle = slice(curr_state, 4 * point_index, 1, 3);
                             bary_cord = barycoords(v1s, v2s, v3s, source_particle);
                             interptargets[j] += interp_eval(alphas_x, bary_cord[0], bary_cord[1]) * curr_state[4 * point_index + 3] * area;
-                            interptargets[j+6] += interp_eval(alphas_y, bary_cord[0], bary_cord[1]) * curr_state[4 * point_index + 3] * area;
-                            interptargets[j+12] += interp_eval(alphas_z, bary_cord[0], bary_cord[1]) * curr_state[4 * point_index + 3] * area;
+                            interptargets[j + cluster_count] += interp_eval(alphas_y, bary_cord[0], bary_cord[1]) * curr_state[4 * point_index + 3] * area;
+                            interptargets[j + 2 * cluster_count] += interp_eval(alphas_z, bary_cord[0], bary_cord[1]) * curr_state[4 * point_index + 3] * area;
                         }
                     }
                 } else { // source has few particles, do C-P interaction
-                    for (int i = 0; i < 6; i++) {
+                    for (int i = 0; i < cluster_count; i++) {
                         for (int j = 0; j < interptargets.size(); j++) interptargets[j] = 0;
 
                         for (int j = 0; j < particle_count_source; j++) {
@@ -162,17 +165,17 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                             source_particle = slice(curr_state, 4 * point_index, 1, 3);
                             func_val = BVE_gfunc(curr_points[i], source_particle);
                             interptargets[i] += func_val[0] * curr_state[4 * point_index + 3] * area;
-                            interptargets[i+6] += func_val[1] * curr_state[4 * point_index + 3] * area;
-                            interptargets[i+12] += func_val[2] * curr_state[4 * point_index + 3] * area;
+                            interptargets[i + cluster_count] += func_val[1] * curr_state[4 * point_index + 3] * area;
+                            interptargets[i + 2 * cluster_count] += func_val[2] * curr_state[4 * point_index + 3] * area;
                         }
                     }
                 }
-                dgetrs_(&trans, &dim, &nrhs, &*Aimatrix.begin(), &dim, ipiv, &*interptargets.begin(), &dim, &info);
+                dgetrs_(&trans, &dim, &nrhs, &*interp_matrix.begin(), &dim, ipiv, &*interptargets.begin(), &dim, &info);
 
-                for (int i = 0; i < 6; i++) {
+                for (int i = 0; i < cluster_count; i++) {
                     alphas_x[i] = interptargets[i];
-                    alphas_y[i] = interptargets[i+6];
-                    alphas_z[i] = interptargets[i+12];
+                    alphas_y[i] = interptargets[i + cluster_count];
+                    alphas_z[i] = interptargets[i + 2 * cluster_count];
                 }
 
                 for (int i = 0; i < particle_count_target; i++) {
@@ -194,9 +197,9 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                     for (int i = 0; i < particle_count_target; i++) {
                         point_index = tri_points[lev_target][curr_target][i];
                         target_particle = slice(curr_state, 4 * point_index, 1, 3);
-                        for (int j = 0; j < 6; j++) {
-                            us = cluster_points[j][0];
-                            vs = cluster_points[j][1];
+                        for (int j = 0; j < cluster_count; j++) {
+                            us = interp_points[j][0];
+                            vs = interp_points[j][1];
                             placeholder1 = v1s;
                             placeholder2 = v2s;
                             placeholder3 = v3s;
@@ -206,14 +209,14 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                             vec_add(placeholder1, placeholder2);
                             vec_add(placeholder1, placeholder3);
                             func_val = BVE_gfunc(target_particle, placeholder1);
-                            for (int k = 0; k < 3; k++) func_vals[j + 6 * k] = func_val[k];
+                            for (int k = 0; k < 3; k++) func_vals[j + cluster_count * k] = func_val[k];
                         }
-                        dgetrs_(&trans, &dim, &nrhs, &*Aimatrix.begin(), &dim, ipiv, &*func_vals.begin(), &dim, &info);
+                        dgetrs_(&trans, &dim, &nrhs, &*interp_matrix.begin(), &dim, ipiv, &*func_vals.begin(), &dim, &info);
 
-                        for (int j = 0; j < 6; j++) {
+                        for (int j = 0; j < cluster_count; j++) {
                             alphas_x[j] = func_vals[j];
-                            alphas_y[j] = func_vals[j+6];
-                            alphas_z[j] = func_vals[j+12];
+                            alphas_y[j] = func_vals[j + cluster_count];
+                            alphas_z[j] = func_vals[j + 2 * cluster_count];
                         }
                         for (int j = 0; j < particle_count_source; j++) {
                             point_index = tri_points[lev_source][curr_source][j];
@@ -262,7 +265,7 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
     for (int i = 0; i < points; i++) modify[4 * i + 3] = -2 * omega * modify[4 * i + 2];
 }
 
-#define point_count 163842
+#define point_count 2562
 
 int main() {
 
@@ -275,6 +278,8 @@ int main() {
     double phi = (1 + sqrt(5)) / 2;
     double theta = 0.7;
     int many_count = 10;
+    int degree = 6;
+    int cluster_count = (degree + 1) * (degree + 2) / 2;
 
     vector<double> curr_state(4 * point_count); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity
     vector<double> c_1(4 * point_count, 0);
@@ -294,8 +299,14 @@ int main() {
     vector<vector<vector<int>>> tri_points (icos_levels); // points in each triangle
     vector<vector<int>> point_locs (icos_levels, vector<int> (point_count, 0)); // triangle each point is in
 
-    // fstream file("../points.csv");
-    fstream file("./points.csv");
+    vector<vector<double>> cluster_points (cluster_count, vector<double> (3, 0)); // interpolation points
+    vector<double> interp_matrix (cluster_count * cluster_count, 0); // interpolation matrix
+
+    // cout << "Here" << endl;
+
+
+    fstream file("../points.csv");
+    // fstream file("./points.csv");
     string line, word;
 
     ofstream write_out;
@@ -310,9 +321,17 @@ int main() {
         }
     }
 
+    // cout << "Here 2" << endl;
+
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
-    icos_init(vertices, triangle_info, triangle_verts, radius, icos_levels-1);
+    icos_init(vertices, triangle_info, triangle_verts, radius, icos_levels - 1);
+    fekete_init(cluster_points, degree);
+    interp_mat_init(interp_matrix, cluster_points, degree, cluster_count);
+    int ipiv[cluster_count];
+    int info, dim = cluster_count;
+    char trans = 'N';
+    dgetrf_(&dim, &dim, &*interp_matrix.begin(), &dim, ipiv, &info); // prefactor Ai matrix
 
     for (int i = 0; i < point_count; i++) {
         write_out << curr_state[4 * i] << "," << curr_state[4 * i + 1] << "," << curr_state[4 * i + 2] << "," << curr_state[4 * i + 3] << "\n";
@@ -322,36 +341,36 @@ int main() {
     for (int t = 0; t < 1; t++) { // time iterate with RK4
         double curr_time = t * delta_t;
         points_assign(triangle_verts, vertices, curr_state, tri_points, point_locs, icos_levels, point_count);
-        BVE_ffunc(c_1, curr_state, vertices, triangle_info, triangle_verts, tri_points, curr_time, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, 3);
-        intermediate_1 = c_1;
-        scalar_mult(intermediate_1, delta_t / 2);
-        vec_add(intermediate_1, curr_state);
+        BVE_ffunc(c_1, curr_state, vertices, triangle_info, triangle_verts, tri_points, curr_time, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, 3, interp_matrix, cluster_points, ipiv);
+        // intermediate_1 = c_1;
+        // scalar_mult(intermediate_1, delta_t / 2);
+        // vec_add(intermediate_1, curr_state);
         // points_assign(triangle_verts, vertices, intermediate_1, tri_points, point_locs, icos_levels, point_count);
-        BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, 3);
-        intermediate_2 = c_2;
-        scalar_mult(intermediate_2, delta_t / 2);
-        vec_add(intermediate_2, curr_state);
+        // BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, 3);
+        // intermediate_2 = c_2;
+        // scalar_mult(intermediate_2, delta_t / 2);
+        // vec_add(intermediate_2, curr_state);
         // points_assign(triangle_verts, vertices, intermediate_2, tri_points, point_locs, icos_levels, point_count);
         // BVE_ffunc(c_3, intermediate_2, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count);
-        intermediate_3 = c_3;
-        scalar_mult(intermediate_3, delta_t);
-        vec_add(intermediate_3, curr_state);
+        // intermediate_3 = c_3;
+        // scalar_mult(intermediate_3, delta_t);
+        // vec_add(intermediate_3, curr_state);
         // points_assign(triangle_verts, vertices, intermediate_3, tri_points, point_locs, icos_levels, point_count);
         // BVE_ffunc(c_4, intermediate_3, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count);
-        c1234 = c_1;
-        scalar_mult(c_2, 2);
-        vec_add(c1234, c_2);
-        scalar_mult(c_3, 2);
-        vec_add(c1234, c_3);
-        vec_add(c1234, c_4);
-        scalar_mult(c1234, delta_t / 6);
-        vec_add(curr_state, c1234);
-        for (int i = 0; i < point_count; i++) {
-            vector<double> projected = slice(curr_state, 4 * i, 1, 3);
-            project_to_sphere(projected, 1);
-            for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
-            write_out << curr_state[4 * i] << "," << curr_state[4 * i + 1] << "," << curr_state[4 * i + 2] << "," << curr_state[4 * i + 3] << "\n"; // write position
-        }
+        // c1234 = c_1;
+        // scalar_mult(c_2, 2);
+        // vec_add(c1234, c_2);
+        // scalar_mult(c_3, 2);
+        // vec_add(c1234, c_3);
+        // vec_add(c1234, c_4);
+        // scalar_mult(c1234, delta_t / 6);
+        // vec_add(curr_state, c1234);
+        // for (int i = 0; i < point_count; i++) {
+        //     vector<double> projected = slice(curr_state, 4 * i, 1, 3);
+        //     project_to_sphere(projected, 1);
+        //     for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
+        //     write_out << curr_state[4 * i] << "," << curr_state[4 * i + 1] << "," << curr_state[4 * i + 2] << "," << curr_state[4 * i + 3] << "\n"; // write position
+        // }
         cout << t << endl;
     }
 
