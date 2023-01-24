@@ -142,6 +142,7 @@ vector<double> barycoords(vector<double>& p1, vector<double>& p2, vector<double>
     vector<int> ipiv(3);
     int info;
     dgesv_(&dim, &nrhs, &*mat.begin(), &dim, &*ipiv.begin(), &*coords.begin(), &dim, &info);
+    scalar_mult(coords, 1.0 / (coords[0] + coords[1] + coords[2]));
     // return three_three_solve(amatrix, p);
     return coords;
 }
@@ -404,8 +405,17 @@ void points_assign(vector<vector<vector<int>>>& tri_verts, vector<vector<double>
     }
 }
 
-double interp_eval(vector<double>& alphas, double s, double t) {
-    return alphas[0] + alphas[1] * s + alphas[2] * t + alphas[3] * s * t + alphas[4] * s * s + alphas[5] * t * t;
+double interp_eval(vector<double>& alphas, double s, double t, int degree) {
+    // return alphas[0] + alphas[1] * s + alphas[2] * t + alphas[3] * s * t + alphas[4] * s * s + alphas[5] * t * t;
+    double accum = 0;
+    int index;
+    for (int i = 0; i < degree + 1; i++) {
+        for (int j = 0; j < i + 1; j++) {
+            index = i * (i + 1) / 2 + j;
+            accum += pow(s, i - j) * pow(t, j) * alphas[index = i * (i + 1) / 2 + j];
+        }
+    }
+    return accum;
 }
 
 void fekete_init(vector<vector<double>>& points, int degree) {
@@ -413,17 +423,20 @@ void fekete_init(vector<vector<double>>& points, int degree) {
     int index;
     double a, b, c;
     for (int i = 0; i < degree + 1; i++) {
-        for (int j = 0; j < degree + 1; j++) {
+        a = 1 - i * delta_x;
+        for (int j = 0; j < i + 1; j++) {
             index = i * (i + 1) / 2 + j;
-            a = 1 - i * delta_x;
             c = j * delta_x;
             b = 1 - a - b;
-            a = 0.5 * (1 + sin(M_PI / 2 * (2 * a - 1)));
-            b = 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1)));
-            c = 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1)));
-            points[index][0] = a / (a + b + c);
-            points[index][1] = b / (a + b + c);
-            points[index][2] = c / (a + b + c);
+            // a = 0.5 * (1 + sin(M_PI / 2 * (2 * a - 1)));
+            // b = 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1)));
+            // c = 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1)));
+            // cout << "";
+            // cout << "a: " << a << " b: " << b << " c: " << c << " i: " << i << " j: " << j << " index: " << index << endl;
+
+            points[index][0] = 0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
+            points[index][1] = 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
+            points[index][2] = 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
         }
     }
 }
@@ -432,7 +445,7 @@ void interp_mat_init(vector<double>& mat, vector<vector<double>>& points, int de
     int index, place;
     double a, b;
     for (int i = 0; i < degree + 1; i++) {
-        for (int j = 0; j < degree + 1; j++) {
+        for (int j = 0; j < i + 1; j++) {
             index = i * (i + 1) / 2 + j;
             for (int k = 0; k < point_count; k++) {
                 a = points[k][0];
@@ -442,6 +455,56 @@ void interp_mat_init(vector<double>& mat, vector<vector<double>>& points, int de
             }
         }
     }
+}
+
+void regrid_points(vector<double>& curr_state, vector<double>& target_points, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, int point_count, int tri_count) {
+    vector<double> curr_target, curr_pos, v1, v2, v3, bary;
+    vector<int> poss_tris;
+    double curr_vor;
+    int test_count, iv1, iv2, iv3;
+    int success = 0, failure = 0;
+    bool found;
+    for (int i = 0; i < point_count; i++) {
+        found = false;
+        curr_target = slice(target_points, 4 * i, 1, 3);
+        curr_pos = slice(curr_state, 4 * i, 1, 3);
+        curr_vor = curr_state[4 * i + 3];
+        poss_tris = vert_tris[i];
+        test_count = poss_tris.size();
+        for (int j = 0; j < test_count; j++) {
+            iv1 = poss_tris[0];
+            iv2 = poss_tris[1];
+            iv3 = poss_tris[2];
+            v1 = slice(curr_state, 4 * i, 1, 3);
+            v2 = slice(curr_state, 4 * i, 1, 3);
+            v3 = slice(curr_state, 4 * i, 1, 3);
+            if (check_in_tri(v1, v2, v3, curr_pos)) {
+                bary = barycoords(v1, v2, v3, curr_pos);
+                target_points[4 * i + 3] = bary[0] * curr_state[4 * iv1 + 3] + bary[1] * curr_state[4 * iv2 + 3] + bary[2] * curr_state[4 * iv3 + 3];
+                success += 1;
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            continue;
+        }
+        failure += 1;
+        for (int j = 0; j < tri_count; j++) {
+            iv1 = poss_tris[0];
+            iv2 = poss_tris[1];
+            iv3 = poss_tris[2];
+            v1 = slice(curr_state, 4 * i, 1, 3);
+            v2 = slice(curr_state, 4 * i, 1, 3);
+            v3 = slice(curr_state, 4 * i, 1, 3);
+            if (check_in_tri(v1, v2, v3, curr_pos)) {
+                bary = barycoords(v1, v2, v3, curr_pos);
+                target_points[4 * i + 3] = bary[0] * curr_state[4 * iv1 + 3] + bary[1] * curr_state[4 * iv2 + 3] + bary[2] * curr_state[4 * iv3 + 3];
+                break;
+            }
+        }
+    }
+    cout << "success: " << success << " failure: " << failure << endl;
 }
 
 #endif

@@ -42,7 +42,8 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, double t, dou
     // cout << endl;
 }
 
-#define point_count 40962
+#define point_count 2562
+#define tri_count 5120
 
 int main() {
     double delta_t = 0.01, end_t = 1;
@@ -62,21 +63,63 @@ int main() {
     vector<double> intermediate_2(4 * point_count);
     vector<double> intermediate_3(4 * point_count);
 
-    // fstream file("../points.csv");
-    fstream file("./points.csv");
+    vector<vector<int>> triangles(tri_count, vector<int> (3));
+    vector<vector<int>> vert_tris(point_count);
+
+    fstream file1("../points.csv");
+    fstream file2("../tris.csv");
+    fstream file3("../vert_tris.csv");
+    fstream file4("../vert_tri_count.csv");
+    // fstream file1("./points.csv");
     string line, word;
+    int tri_counts;
 
     ofstream write_out;
     write_out.open("direct_output.csv", ofstream::out | ofstream::trunc);
 
     for (int i = 0; i < point_count; i++) {
-        getline(file, line);
-        stringstream str(line);
+        getline(file1, line);
+        stringstream str1(line);
         for (int j = 0; j < 4; j++) {
-            getline(str, word, ',');
+            getline(str1, word, ',');
             curr_state[4 * i + j] = stod(word);
         }
+
+        // getline(file2, line);
+        // stringstream str2(line);
+        // for (int j = 0; j < 3; j++) {
+        //     getline(str2, word, ',');
+        //     triangles[i][j] = stod(word);
+        // }
+
+        getline(file4, line);
+        stringstream str4(line);
+        getline(str4, word, ',');
+        tri_counts = stod(word);
+
+        vert_tris[i] = vector<int> (tri_count);
+        getline(file3, line);
+        stringstream str3(line);
+        for (int j = 0; j < tri_counts; j++) {
+            getline(str3, word, ',');
+            vert_tris[i][j] = stod(word);
+        }
     }
+
+    cout << "here" << endl;
+
+    for (int i = 0; i < tri_count; i++) {
+        getline(file2, line);
+        stringstream str2(line);
+        for (int j = 0; j < 3; j++) {
+            getline(str2, word, ',');
+            triangles[i][j] = stod(word);
+        }
+    }
+
+    cout << vert_tris[1][4] << endl;
+
+    // cout << "here" << endl;
 
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
@@ -91,6 +134,7 @@ int main() {
         //     // cout << intermediate_1[4 * i] << "," << intermediate_1[4 * i + 1] << "," << intermediate_1[4 * i + 2] << "," << intermediate_1[4 * i + 3] << endl;
         //     write_out << "curr," << curr_state[4 * i] << "," << curr_state[4 * i + 1] << "," << curr_state[4 * i + 2] << "," << curr_state[4 * i + 3] << "\n"; // write position
         // }
+        cout << "1" << endl;
         BVE_ffunc(c_1, curr_state, curr_time, delta_t, omega, area, point_count);
         intermediate_1 = c_1;
         // cout << "intermediate 1" << endl;
@@ -98,6 +142,8 @@ int main() {
         //     // cout << intermediate_1[4 * i] << "," << intermediate_1[4 * i + 1] << "," << intermediate_1[4 * i + 2] << "," << intermediate_1[4 * i + 3] << endl;
         //     write_out << "inter 1," << intermediate_1[4 * i] << "," << intermediate_1[4 * i + 1] << "," << intermediate_1[4 * i + 2] << "," << intermediate_1[4 * i + 3] << "\n"; // write position
         // }
+        cout << "2" << endl;
+
         scalar_mult(intermediate_1, delta_t / 2);
         // cout << "intermediate 1" << endl;
         // for (int i = 0; i < point_count; i++) {
@@ -108,6 +154,8 @@ int main() {
 
         BVE_ffunc(c_2, intermediate_1, curr_time + delta_t / 2, delta_t, omega, area, point_count);
         intermediate_2 = c_2;
+        cout << "3" << endl;
+
         // cout << "intermediate 2" << endl;
         // for (int i = 0; i < point_count; i++) {
         //     // cout << intermediate_1[4 * i] << "," << intermediate_1[4 * i + 1] << "," << intermediate_1[4 * i + 2] << "," << intermediate_1[4 * i + 3] << endl;
@@ -125,9 +173,13 @@ int main() {
         // }
         BVE_ffunc(c_3, intermediate_2, curr_time + delta_t / 2, delta_t, omega, area, point_count);
         intermediate_3 = c_3;
+        cout << "4" << endl;
+
         scalar_mult(intermediate_3, delta_t);
         vec_add(intermediate_3, curr_state);
         BVE_ffunc(c_4, intermediate_3, curr_time + delta_t, delta_t, omega, area, point_count);
+        cout << "5" << endl;
+
         c1234 = c_1;
         scalar_mult(c_2, 2);
         vec_add(c1234, c_2);
@@ -135,7 +187,9 @@ int main() {
         vec_add(c1234, c_3);
         vec_add(c1234, c_4);
         scalar_mult(c1234, delta_t / 6);
-        vec_add(curr_state, c1234);
+        // vec_add(curr_state, c1234);
+        vec_add(c1234, curr_state); // c1234 is new state
+        regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count);
         for (int i = 0; i < point_count; i++) {
             vector<double> projected = slice(curr_state, 4 * i, 1, 3);
             // projected = project_to_sphere(projected, 1);
