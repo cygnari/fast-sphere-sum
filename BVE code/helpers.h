@@ -473,15 +473,12 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
     int success = 0, failure = 0, bad = 0;
     bool found;
     for (int i = 0; i < point_count; i++) {
-    // for (int i = 770; i < 771; i++) {
         found = false;
         curr_target = slice(target_points, 5 * i, 1, 3);
         curr_pos = slice(curr_state, 5 * i, 1, 3);
-        // cout << "pos " << curr_pos[0] << " " << curr_pos[1] << " " << curr_pos[2] << endl;
         // curr_vor = curr_state[5 * i + 3];
         poss_tris = vert_tris[i];
         test_count = poss_tris.size();
-        // cout << test_count << endl;
         for (int j = 0; j < test_count; j++) {
             iv1 = triangles[poss_tris[j]][0];
             iv2 = triangles[poss_tris[j]][1];
@@ -489,16 +486,11 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
             v1 = slice(curr_state, 5 * iv1, 1, 3);
             v2 = slice(curr_state, 5 * iv2, 1, 3);
             v3 = slice(curr_state, 5 * iv3, 1, 3);
-            // cout << "iv1 " << iv1 << " iv2 " << iv2 << " iv3 " << iv3 << endl;
-            // cout << "v1 " << v1[0] << " " << v1[1] << " " << v1[2] << endl;
-            // cout << "v2 " << v2[0] << " " << v2[1] << " " << v2[2] << endl;
-            // cout << "v3 " << v3[0] << " " << v3[1] << " " << v3[2] << endl;
-            // bary = barycoords(v1, v2, v3, curr_target);
-            // cout << "bary " << bary[0] << " " << bary[1] << " " << bary[2] << endl;
             if (check_in_tri(v1, v2, v3, curr_target)) {
                 // cout << "here" << endl;
-                bary = norm_barycoords(v1, v2, v3, curr_pos);
+                bary = norm_barycoords(v1, v2, v3, curr_target);
                 target_points[5 * i + 3] = bary[0] * curr_state[5 * iv1 + 3] + bary[1] * curr_state[5 * iv2 + 3] + bary[2] * curr_state[5 * iv3 + 3];
+                target_points[5 * i + 4] = bary[0] * curr_state[5 * iv1 + 4] + bary[1] * curr_state[5 * iv2 + 4] + bary[2] * curr_state[5 * iv3 + 4];
                 success += 1;
                 found = true;
                 break;
@@ -515,23 +507,21 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
             v1 = slice(curr_state, 5 * iv1, 1, 3);
             v2 = slice(curr_state, 5 * iv2, 1, 3);
             v3 = slice(curr_state, 5 * iv3, 1, 3);
-            if (check_in_tri(v1, v2, v3, curr_pos)) {
-                bary = norm_barycoords(v1, v2, v3, curr_pos);
+            if (check_in_tri(v1, v2, v3, curr_target)) {
+                bary = norm_barycoords(v1, v2, v3, curr_target);
                 target_points[5 * i + 3] = bary[0] * curr_state[5 * iv1 + 3] + bary[1] * curr_state[5 * iv2 + 3] + bary[2] * curr_state[5 * iv3 + 3];
+                target_points[5 * i + 4] = bary[0] * curr_state[5 * iv1 + 4] + bary[1] * curr_state[5 * iv2 + 4] + bary[2] * curr_state[5 * iv3 + 4];
                 found = true;
-                cout << "point: " << i << " in triangle: " << j << " bary cords: " << bary[0] << " " << bary[1] << " " << bary[2] << endl;
-                cout << "curr vor: " << curr_vor << " vert vors " << curr_state[5 * iv1 + 3] << " " << curr_state[5 * iv2 + 3] << " " << curr_state[5 * iv3 + 3] <<  endl;
+                // cout << "point: " << i << " in triangle: " << j << " bary cords: " << bary[0] << " " << bary[1] << " " << bary[2] << endl;
+                // cout << "curr vor: " << curr_vor << " vert vors " << curr_state[5 * iv1 + 3] << " " << curr_state[5 * iv2 + 3] << " " << curr_state[5 * iv3 + 3] <<  endl;
                 break;
             }
         }
         if (not found) {
             bad += 1;
-            // cout << "point: " << i << " position " << curr_state[5 * i] << " " << curr_state[5 * i + 1] << " " << curr_state[5 * i + 2] << endl;
-            // cout << "test count: " << test_count << endl;
-            // for (int j = 0; j < 7; j++) cout << poss_tris[j] << endl;
         }
     }
-    cout << "success: " << success << " failure: " << failure << " bad: " << bad << endl;
+    // cout << "success: " << success << " failure: " << failure << " bad: " << bad << endl;
 }
 
 void amr(vector<double>& curr_state, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, vector<double>& areas, int tri_count) { // adaptive mesh refinement
@@ -547,8 +537,10 @@ void amr(vector<double>& curr_state, vector<vector<int>>& triangles, vector<vect
         vor3 = curr_state[4 * iv3 + 3];
         max_val = max(vor1, max(vor2, vor3));
         min_val = min(vor1, min(vor2, vor3));
-        if (max_val - min_val > threshold) {
+        if (max_val - min_val > threshold) { // if over threshold, refine
             // refine
+        } else { // do not refine if not over threshold
+            continue;
         }
         // if (max_val - min_val < 0.0001) {
         //     continue;

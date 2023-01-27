@@ -121,8 +121,11 @@ int main() {
     }
 
     vector<double> position;
+    double lat;
     for (int i = 0; i < point_count; i++) {
         position = slice(curr_state, 5 * i, 1, 3);
+        lat = lat_lon(position)[0];
+        curr_state[5 * i + 4] = lat;
     }
 
     // cout << vert_tris[1][4] << endl;
@@ -133,11 +136,11 @@ int main() {
 
     // write out initial state
     for (int i = 0; i < point_count; i++) {
-        write_out << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "\n";
+        write_out << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "\n";
     }
 
-    // for (int t = 0; t < time_steps; t++) { // time iterate with RK4
-    for (int t = 0; t < 1; t++) {
+    for (int t = 0; t < time_steps; t++) { // time iterate with RK4
+    // for (int t = 0; t < 1; t++) {
         double curr_time = t * delta_t;
         // for (int i = 0; i < point_count; i++) {
         //     // cout << intermediate_1[4 * i] << "," << intermediate_1[4 * i + 1] << "," << intermediate_1[4 * i + 2] << "," << intermediate_1[4 * i + 3] << endl;
@@ -201,7 +204,6 @@ int main() {
         regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count);
         for (int i = 0; i < point_count; i++) {
             vector<double> projected = slice(curr_state, 5 * i, 1, 3);
-            // projected = project_to_sphere(projected, 1);
             project_to_sphere(projected, 1);
             for (int j = 0; j < 3; j++) curr_state[5 * i + j] = projected[j]; // reproject points to surface of sphere
             write_out << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "\n"; // write current state
