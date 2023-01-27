@@ -490,37 +490,32 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
     // cout << "success: " << success << " failure: " << failure << " bad: " << bad << endl;
 }
 
-void amr(vector<double>& curr_state, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, vector<double>& areas, int tri_count) { // adaptive mesh refinement
-    double threshold = 1;
-    int iv1, iv2, iv3;
+vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, vector<double>& areas, int tri_count, int point_count, int max_points) { // adaptive mesh refinement
+    double refine_threshold = 1;
+    int iv1, iv2, iv3, iv12, iv23, iv31;
     double vor1, vor2, vor3, max_val, min_val, vor1n, vor2n, vor3n, mean, var;
-    for (int i = 0; i < tri_count; i++) {
-        iv1 = triangles[i][0];
-        iv2 = triangles[i][1];
-        iv3 = triangles[i][2];
-        vor1 = curr_state[4 * iv1 + 3];
-        vor2 = curr_state[4 * iv2 + 3];
-        vor3 = curr_state[4 * iv3 + 3];
-        max_val = max(vor1, max(vor2, vor3));
-        min_val = min(vor1, min(vor2, vor3));
-        if (max_val - min_val > threshold) { // if over threshold, refine
-            // refine
-        } else { // do not refine if not over threshold
-            continue;
+    vector<double> v1, v2, v3, v12, v23, v31;
+    vector<int> return_values {tri_count, point_count}; // return new tri_count and point_count;
+    if (point_count >= max_points) return return_values;
+    else {
+        for (int i = 0; i < tri_count; i++) {
+            iv1 = triangles[i][0];
+            iv2 = triangles[i][1];
+            iv3 = triangles[i][2];
+            vor1 = curr_state[4 * iv1 + 3];
+            vor2 = curr_state[4 * iv2 + 3];
+            vor3 = curr_state[4 * iv3 + 3];
+            max_val = max(vor1, max(vor2, vor3));
+            min_val = min(vor1, min(vor2, vor3));
+            if (max_val - min_val > refine_threshold) { // if over threshold, refine
+                // refine
+            } else { // do not refine if not over threshold
+                continue;
+            }
         }
-        // if (max_val - min_val < 0.0001) {
-        //     continue;
-        // } else {
-        //     vor1n = (vor1 - min_val) / (max_val - min_val);
-        //     vor2n = (vor2 - min_val) / (max_val - min_val);
-        //     vor3n = (vor3 - min_val) / (max_val - min_val);
-        //     mean = (vor1n + vor2n + vor3n) / 3.0;
-        //     var = (pow(vor1n - mean, 2) + pow(vor2n - mean, 2) + pow(vor3n - mean, 2)) / 3.0;
-        //     if (var > threshold) { // refine}
-        //     }
-        // }
-
     }
+    return_values = {tri_count, point_count};
+    return return_values;
 }
 
 #endif

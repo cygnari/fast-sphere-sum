@@ -2,7 +2,7 @@
 #include <cmath>
 #include <array>
 #include <vector>
-// #include <Accelerate/Accelerate.h>
+#include <Accelerate/Accelerate.h>
 #include <fstream>
 #include <sstream>
 #include <chrono>
@@ -33,9 +33,6 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, double t, dou
     }
 }
 
-// #define point_count 2562
-// #define tri_count 5120
-
 int main() {
     double delta_t = 0.01, end_t = 1;
     int point_count = 2562, tri_count = 5120, time_steps = end_t / delta_t;
@@ -55,14 +52,14 @@ int main() {
     vector<vector<int>> triangles(tri_count, vector<int> (3)); // triangles[i] is a length 3 int vector containing the indices of the points of the vertices
     vector<vector<int>> vert_tris(point_count); // vert_tris[i] is the int vector containing the indices of the triangles adjacent to point i
 
-    fstream file1("../points.csv");
-    fstream file2("../tris.csv");
-    fstream file3("../vert_tris.csv");
-    fstream file4("../vert_tri_count.csv");
+    ifstream file1("../points.csv"); // ifstream = input file stream
+    ifstream file2("../tris.csv");
+    ifstream file3("../vert_tris.csv");
+    ifstream file4("../vert_tri_count.csv");
     string line, word;
     int tri_counts;
 
-    ofstream write_out;
+    ofstream write_out; // ofstream = output file stream
     write_out.open("direct_output.csv", ofstream::out | ofstream::trunc);
 
     for (int i = 0; i < point_count; i++) {
@@ -95,6 +92,11 @@ int main() {
             triangles[i][j] = stod(word);
         }
     }
+
+    file1.close(); // close all the files we read from
+    file2.close();
+    file3.close();
+    file4.close();
 
     vector<double> position;
     double lat;
@@ -133,7 +135,6 @@ int main() {
         vec_add(c1234, c_3);
         vec_add(c1234, c_4);
         scalar_mult(c1234, delta_t / 6);
-        // vec_add(curr_state, c1234);
         vec_add(c1234, curr_state); // c1234 is new state
         regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count); // regrids points so that they are regular, modifies curr_state
         for (int i = 0; i < point_count; i++) {
