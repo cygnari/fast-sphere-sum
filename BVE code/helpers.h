@@ -9,6 +9,7 @@
 #include <vector>
 #include <Accelerate/Accelerate.h>
 #include <cassert>
+#include <algorithm>
 
 extern "C" {
     extern int dgesv_(int*,int*,double*,int*,int*,double*,int*,int*);
@@ -142,8 +143,15 @@ vector<double> barycoords(vector<double>& p1, vector<double>& p2, vector<double>
     vector<int> ipiv(3);
     int info;
     dgesv_(&dim, &nrhs, &*mat.begin(), &dim, &*ipiv.begin(), &*coords.begin(), &dim, &info);
-    scalar_mult(coords, 1.0 / (coords[0] + coords[1] + coords[2]));
+    // scalar_mult(coords, 1.0 / (coords[0] + coords[1] + coords[2]));
     // return three_three_solve(amatrix, p);
+    return coords;
+}
+
+vector<double> norm_barycoords(vector<double>& p1, vector<double>& p2, vector<double>& p3, vector<double>& p) { // returns normalized barycentric coordinates so b1 + b2 + b3 = 1
+    vector<double> coords;
+    coords = barycoords(p1, p2, p3, p);
+    scalar_mult(coords, 1.0 / (coords[0] + coords[1] + coords[2]));
     return coords;
 }
 
@@ -340,7 +348,7 @@ void points_assign(vector<vector<vector<int>>>& tri_verts, vector<vector<double>
     // tri_points.push_back(vector<vector<int>> (20, vector<int> (0)));
     tri_points[0] = vector<vector<int>> (20);
     for (int i = 0; i < point_count; i++) {
-        point = slice(points, 4 * i, 1, 3);
+        point = slice(points, 5 * i, 1, 3);
         // iv1 = tri_verts[0][point_locs[0][i]][0];
         // iv2 = tri_verts[0][point_locs[0][i]][1];
         // iv3 = tri_verts[0][point_locs[0][i]][2];
@@ -385,7 +393,7 @@ void points_assign(vector<vector<vector<int>>>& tri_verts, vector<vector<double>
         // tri_points.push_back(vector<vector<int>> (20 * pow(4, i), vector<int> (0)));
         tri_points[i] = vector<vector<int>> (20 * pow(4, i));
         for (int j = 0; j < point_count; j++) {
-            point = slice(points, 4 * j, 1, 3);
+            point = slice(points, 5 * j, 1, 3);
             int lb = 4 * point_locs[i-1][j];
             int ub = lb + 4;
             for (int k = lb; k < ub; k++) {
@@ -457,30 +465,40 @@ void interp_mat_init(vector<double>& mat, vector<vector<double>>& points, int de
     }
 }
 
-void regrid_points(vector<double>& curr_state, vector<double>& target_points, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, int point_count, int tri_count) {
+void regrid_points(vector<double>& curr_state, vector<double>& target_points, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, int point_count, int tri_count) { // remesh back to original particle locations
     vector<double> curr_target, curr_pos, v1, v2, v3, bary;
     vector<int> poss_tris;
     double curr_vor;
     int test_count, iv1, iv2, iv3;
-    int success = 0, failure = 0;
+    int success = 0, failure = 0, bad = 0;
     bool found;
     for (int i = 0; i < point_count; i++) {
+    // for (int i = 770; i < 771; i++) {
         found = false;
-        curr_target = slice(target_points, 4 * i, 1, 3);
-        curr_pos = slice(curr_state, 4 * i, 1, 3);
-        curr_vor = curr_state[4 * i + 3];
+        curr_target = slice(target_points, 5 * i, 1, 3);
+        curr_pos = slice(curr_state, 5 * i, 1, 3);
+        // cout << "pos " << curr_pos[0] << " " << curr_pos[1] << " " << curr_pos[2] << endl;
+        // curr_vor = curr_state[5 * i + 3];
         poss_tris = vert_tris[i];
         test_count = poss_tris.size();
+        // cout << test_count << endl;
         for (int j = 0; j < test_count; j++) {
-            iv1 = poss_tris[0];
-            iv2 = poss_tris[1];
-            iv3 = poss_tris[2];
-            v1 = slice(curr_state, 4 * i, 1, 3);
-            v2 = slice(curr_state, 4 * i, 1, 3);
-            v3 = slice(curr_state, 4 * i, 1, 3);
-            if (check_in_tri(v1, v2, v3, curr_pos)) {
-                bary = barycoords(v1, v2, v3, curr_pos);
-                target_points[4 * i + 3] = bary[0] * curr_state[4 * iv1 + 3] + bary[1] * curr_state[4 * iv2 + 3] + bary[2] * curr_state[4 * iv3 + 3];
+            iv1 = triangles[poss_tris[j]][0];
+            iv2 = triangles[poss_tris[j]][1];
+            iv3 = triangles[poss_tris[j]][2];
+            v1 = slice(curr_state, 5 * iv1, 1, 3);
+            v2 = slice(curr_state, 5 * iv2, 1, 3);
+            v3 = slice(curr_state, 5 * iv3, 1, 3);
+            // cout << "iv1 " << iv1 << " iv2 " << iv2 << " iv3 " << iv3 << endl;
+            // cout << "v1 " << v1[0] << " " << v1[1] << " " << v1[2] << endl;
+            // cout << "v2 " << v2[0] << " " << v2[1] << " " << v2[2] << endl;
+            // cout << "v3 " << v3[0] << " " << v3[1] << " " << v3[2] << endl;
+            // bary = barycoords(v1, v2, v3, curr_target);
+            // cout << "bary " << bary[0] << " " << bary[1] << " " << bary[2] << endl;
+            if (check_in_tri(v1, v2, v3, curr_target)) {
+                // cout << "here" << endl;
+                bary = norm_barycoords(v1, v2, v3, curr_pos);
+                target_points[5 * i + 3] = bary[0] * curr_state[5 * iv1 + 3] + bary[1] * curr_state[5 * iv2 + 3] + bary[2] * curr_state[5 * iv3 + 3];
                 success += 1;
                 found = true;
                 break;
@@ -491,20 +509,60 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
         }
         failure += 1;
         for (int j = 0; j < tri_count; j++) {
-            iv1 = poss_tris[0];
-            iv2 = poss_tris[1];
-            iv3 = poss_tris[2];
-            v1 = slice(curr_state, 4 * i, 1, 3);
-            v2 = slice(curr_state, 4 * i, 1, 3);
-            v3 = slice(curr_state, 4 * i, 1, 3);
+            iv1 = triangles[j][0];
+            iv2 = triangles[j][1];
+            iv3 = triangles[j][2];
+            v1 = slice(curr_state, 5 * iv1, 1, 3);
+            v2 = slice(curr_state, 5 * iv2, 1, 3);
+            v3 = slice(curr_state, 5 * iv3, 1, 3);
             if (check_in_tri(v1, v2, v3, curr_pos)) {
-                bary = barycoords(v1, v2, v3, curr_pos);
-                target_points[4 * i + 3] = bary[0] * curr_state[4 * iv1 + 3] + bary[1] * curr_state[4 * iv2 + 3] + bary[2] * curr_state[4 * iv3 + 3];
+                bary = norm_barycoords(v1, v2, v3, curr_pos);
+                target_points[5 * i + 3] = bary[0] * curr_state[5 * iv1 + 3] + bary[1] * curr_state[5 * iv2 + 3] + bary[2] * curr_state[5 * iv3 + 3];
+                found = true;
+                cout << "point: " << i << " in triangle: " << j << " bary cords: " << bary[0] << " " << bary[1] << " " << bary[2] << endl;
+                cout << "curr vor: " << curr_vor << " vert vors " << curr_state[5 * iv1 + 3] << " " << curr_state[5 * iv2 + 3] << " " << curr_state[5 * iv3 + 3] <<  endl;
                 break;
             }
         }
+        if (not found) {
+            bad += 1;
+            // cout << "point: " << i << " position " << curr_state[5 * i] << " " << curr_state[5 * i + 1] << " " << curr_state[5 * i + 2] << endl;
+            // cout << "test count: " << test_count << endl;
+            // for (int j = 0; j < 7; j++) cout << poss_tris[j] << endl;
+        }
     }
-    cout << "success: " << success << " failure: " << failure << endl;
+    cout << "success: " << success << " failure: " << failure << " bad: " << bad << endl;
+}
+
+void amr(vector<double>& curr_state, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, vector<double>& areas, int tri_count) { // adaptive mesh refinement
+    double threshold = 1;
+    int iv1, iv2, iv3;
+    double vor1, vor2, vor3, max_val, min_val, vor1n, vor2n, vor3n, mean, var;
+    for (int i = 0; i < tri_count; i++) {
+        iv1 = triangles[i][0];
+        iv2 = triangles[i][1];
+        iv3 = triangles[i][2];
+        vor1 = curr_state[4 * iv1 + 3];
+        vor2 = curr_state[4 * iv2 + 3];
+        vor3 = curr_state[4 * iv3 + 3];
+        max_val = max(vor1, max(vor2, vor3));
+        min_val = min(vor1, min(vor2, vor3));
+        if (max_val - min_val > threshold) {
+            // refine
+        }
+        // if (max_val - min_val < 0.0001) {
+        //     continue;
+        // } else {
+        //     vor1n = (vor1 - min_val) / (max_val - min_val);
+        //     vor2n = (vor2 - min_val) / (max_val - min_val);
+        //     vor3n = (vor3 - min_val) / (max_val - min_val);
+        //     mean = (vor1n + vor2n + vor3n) / 3.0;
+        //     var = (pow(vor1n - mean, 2) + pow(vor2n - mean, 2) + pow(vor3n - mean, 2)) / 3.0;
+        //     if (var > threshold) { // refine}
+        //     }
+        // }
+
+    }
 }
 
 #endif
