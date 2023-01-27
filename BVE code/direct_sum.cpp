@@ -125,7 +125,7 @@ int main() {
     for (int i = 0; i < point_count; i++) {
         position = slice(curr_state, 5 * i, 1, 3);
         lat = lat_lon(position)[0];
-        curr_state[5 * i + 4] = lat;
+        curr_state[5 * i + 4] = lat; // initial latitude as passive tracer 
     }
 
     // cout << vert_tris[1][4] << endl;

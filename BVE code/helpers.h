@@ -19,14 +19,14 @@ extern "C" {
 
 using namespace std;
 
-double dot_prod(vector<double>& x, vector<double>& y) {
+double dot_prod(vector<double>& x, vector<double>& y) { // dot product of vectors x and y
     double sum = 0;
     assert (x.size() == y.size());
     for (int i = 0; i < x.size(); i++) sum += x[i] * y[i];
     return sum;
 }
 
-double vec_norm(vector<double>& x) {
+double vec_norm(vector<double>& x) { // L2 norm of vector x
     return sqrt(dot_prod(x, x));
 }
 
@@ -80,9 +80,7 @@ vector<double> sphere_to_cart(double radius, double colat, double lon) { // turn
 
 void project_to_sphere(vector<double>& p1, double radius) { // projects a point to the surface of a sphere of radius, modifies p1
     double norm = vec_norm(p1);
-    // vector<double> newcords(p1.size());
     for (int i = 0; i < p1.size(); i++) p1[i] *= radius / norm;
-    // return newcords;
 }
 
 vector<double> project_to_sphere_2(vector<double> p1, double radius) { // projects a point to the surface of a sphere of radius, returns the new coordinates
@@ -119,7 +117,7 @@ vector<double> lat_lon(vector<double>& p1) { // finds latitude and longitude of 
     return latlon;
 }
 
-vector<double> three_three_solve(vector<vector<double>> Amat, vector<double> b) {
+vector<double> three_three_solve(vector<vector<double>> Amat, vector<double> b) { // solve 3x3 linear system explicitly, not in use
     vector<double> solution (3, 0);
     double a11 = Amat[0][0], a12 = Amat[0][1], a13 = Amat[0][2], a21 = Amat[1][0], a22 = Amat[1][1], a23 = Amat[1][2], a31 = Amat[2][0], a32 = Amat[2][1], a33 = Amat[2][2];
     double b1 = b[0], b2 = b[1], b3 = b[2];
@@ -139,12 +137,9 @@ vector<double> barycoords(vector<double>& p1, vector<double>& p2, vector<double>
     int dim = p.size();
     int nrhs = 1;
     vector<double> mat {p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], p3[0], p3[1], p3[2]};
-    // vector<vector<double>> amatrix {{p1[0], p2[0], p3[0]}, {p1[1], p2[1], p3[1]}, {p1[2], p2[2], p3[2]}};
     vector<int> ipiv(3);
     int info;
     dgesv_(&dim, &nrhs, &*mat.begin(), &dim, &*ipiv.begin(), &*coords.begin(), &dim, &info);
-    // scalar_mult(coords, 1.0 / (coords[0] + coords[1] + coords[2]));
-    // return three_three_solve(amatrix, p);
     return coords;
 }
 
@@ -175,7 +170,7 @@ vector<double> tri_sides(vector<double>& p1, vector<double>& p2, vector<double>&
     return sides;
 }
 
-double circum_poly(double a, double b, double c) {
+double circum_poly(double a, double b, double c) { // polynomial for circumcenter
     return a * a + b * b - c * c;
 }
 
@@ -213,23 +208,25 @@ double great_circ_dist(vector<double>& p1, vector<double>& p2, double radius) { 
     return theta * radius;
 }
 
-vector<double> BVE_gfunc(vector<double>& x, vector<double>& y) {
+vector<double> BVE_gfunc(vector<double>& x, vector<double>& y) { // interaction function for barotropic vorticity equations
     double denom = 1 - dot_prod(x, y);
     vector<double> cross_prod = cross_product(x, y);
     scalar_mult(cross_prod, 1 / denom);
     return cross_prod;
 }
 
-int check_in_vec(vector<vector<double>>& x, vector<double>& y) {
+int check_in_vec(vector<vector<double>>& x, vector<double>& y) { // checks if length 3 vector y is in vector of vectors x
     for (int i = 0; i < x.size(); i++) {
         if ((x[i][0] == y[0]) and (x[i][1] == y[1]) and (x[i][2] == y[2])) return i; // index where y is in x
     }
     return -1; // -1 if y not in x
 }
 
-void icos_init(vector<vector<double>>& verts, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, double radius, int levels) {
+void icos_init(vector<vector<double>>& verts, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, double radius, int levels) { // initializes icosahedron for fast summation
     double phi = (1 + sqrt(5)) / 2;
-    verts.push_back(project_to_sphere_2(vector<double> {0, 1, phi}, radius));
+    vector<double> center, v1, v2, v3, v12, v23, v31;
+    int iv1, iv2, iv3;
+    verts.push_back(project_to_sphere_2(vector<double> {0, 1, phi}, radius)); // 12 starting points
     verts.push_back(project_to_sphere_2(vector<double> {0, -1, phi}, radius));
     verts.push_back(project_to_sphere_2(vector<double> {0, 1, -phi}, radius));
     verts.push_back(project_to_sphere_2(vector<double> {0, -1, -phi}, radius));
@@ -244,7 +241,7 @@ void icos_init(vector<vector<double>>& verts, vector<vector<vector<double>>>& tr
     tri_verts.push_back(vector<vector<int>> (20, vector<int> (0)));
     tri_info.push_back(vector<vector<double>> (20, vector<double> (0)));
     tri_verts[0][0].insert(tri_verts[0][0].end(), {1, 2, 9}); // 0, 1, 2 are indices of the three vertices
-    tri_verts[0][1].insert(tri_verts[0][1].end(), {1, 2, 11});
+    tri_verts[0][1].insert(tri_verts[0][1].end(), {1, 2, 11}); // 20 starting faces
     tri_verts[0][2].insert(tri_verts[0][2].end(), {1, 5, 7});
     tri_verts[0][3].insert(tri_verts[0][3].end(), {1, 5, 9});
     tri_verts[0][4].insert(tri_verts[0][4].end(), {1, 7, 11});
@@ -263,32 +260,32 @@ void icos_init(vector<vector<double>>& verts, vector<vector<vector<double>>>& tr
     tri_verts[0][17].insert(tri_verts[0][17].end(), {6, 9, 10});
     tri_verts[0][18].insert(tri_verts[0][18].end(), {7, 11, 12});
     tri_verts[0][19].insert(tri_verts[0][19].end(), {8, 11, 12});
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 20; i++) { // info about the first 20 faces
         for (int j = 0; j < 3; j++) tri_verts[0][i][j] -= 1;
-        int iv1 = tri_verts[0][i][0];
-        int iv2 = tri_verts[0][i][1];
-        int iv3 = tri_verts[0][i][2];
-        vector<double> v1 = verts[iv1];
-        vector<double> v2 = verts[iv2];
-        vector<double> v3 = verts[iv3];
-        vector<double> center = tri_center(v1, v2, v3, radius);
+        iv1 = tri_verts[0][i][0];
+        iv2 = tri_verts[0][i][1];
+        iv3 = tri_verts[0][i][2];
+        v1 = verts[iv1];
+        v2 = verts[iv2];
+        v3 = verts[iv3];
+        center = tri_center(v1, v2, v3, radius);
         tri_info[0][i].insert(tri_info[0][i].end(), center.begin(), center.end()); // index 0 1 2 is the triangle center
         tri_info[0][i].push_back(tri_radius(v1, v2, v3, center)); // index 3 is the triangle radius
     }
-    for (int i = 0; i < levels; i++) {
+    for (int i = 0; i < levels; i++) { // iterative refinement
         tri_info.push_back(vector<vector<double>> (20 * pow(4, i + 1), vector<double> (0)));
         tri_verts.push_back(vector<vector<int>> (20 * pow(4, i + 1), vector<int> (0)));
         for (int j = 0; j < 20 * pow(4, i); j++) {
-            int iv1 = tri_verts[i][j][0];
-            int iv2 = tri_verts[i][j][1];
-            int iv3 = tri_verts[i][j][2];
-            vector<double> v1 = verts[iv1];
-            vector<double> v2 = verts[iv2];
-            vector<double> v3 = verts[iv3];
-            vector<double> v12 = v1;
-            vector<double> v23 = v2;
-            vector<double> v31 = v3;
-            vec_add(v12, v2);
+            iv1 = tri_verts[i][j][0];
+            iv2 = tri_verts[i][j][1];
+            iv3 = tri_verts[i][j][2];
+            v1 = verts[iv1];
+            v2 = verts[iv2];
+            v3 = verts[iv3];
+            v12 = v1;
+            v23 = v2;
+            v31 = v3;
+            vec_add(v12, v2); // v12 halfway between v1 and v2
             vec_add(v23, v3);
             vec_add(v31, v1);
             scalar_mult(v12, 0.5);
@@ -297,7 +294,7 @@ void icos_init(vector<vector<double>>& verts, vector<vector<vector<double>>>& tr
             project_to_sphere(v12, radius);
             project_to_sphere(v23, radius);
             project_to_sphere(v31, radius);
-            int iv12 = check_in_vec(verts, v12);
+            int iv12 = check_in_vec(verts, v12); // check if v12 already exists
             int iv13 = check_in_vec(verts, v31);
             int iv23 = check_in_vec(verts, v23);
             if (iv12 == -1) {
@@ -312,12 +309,12 @@ void icos_init(vector<vector<double>>& verts, vector<vector<vector<double>>>& tr
                 iv23 = verts.size();
                 verts.push_back(v23);
             }
-            tri_verts[i+1][4*j].insert(tri_verts[i+1][4*j].end(), {iv1, iv13, iv12});
+            tri_verts[i+1][4*j].insert(tri_verts[i+1][4*j].end(), {iv1, iv13, iv12}); // 4 children triangles
             tri_verts[i+1][4*j+1].insert(tri_verts[i+1][4*j+1].end(),{iv3, iv23, iv13});
             tri_verts[i+1][4*j+2].insert(tri_verts[i+1][4*j+2].end(),{iv2, iv12, iv23});
             tri_verts[i+1][4*j+3].insert(tri_verts[i+1][4*j+3].end(),{iv12, iv13, iv23});
 
-            vector<double> center = tri_center(v1, v12, v31, radius);
+            center = tri_center(v1, v12, v31, radius);
             tri_info[i+1][4*j].insert(tri_info[i+1][4*j].end(), center.begin(), center.end());
             tri_info[i+1][4*j].push_back(tri_radius(v1, v12, v31, center));
 
@@ -336,43 +333,15 @@ void icos_init(vector<vector<double>>& verts, vector<vector<vector<double>>>& tr
     }
 }
 
-void points_assign(vector<vector<vector<int>>>& tri_verts, vector<vector<double>>& verts, vector<double>& points, vector<vector<vector<int>>>& tri_points, vector<vector<int>>& point_locs, int levels, int point_count) {
-    vector<double> v1;
-    vector<double> v2;
-    vector<double> v3;
-    vector<double> point;
-    int iv1, iv2, iv3;
+void points_assign(vector<vector<vector<int>>>& tri_verts, vector<vector<double>>& verts, vector<double>& points, vector<vector<vector<int>>>& tri_points, vector<vector<int>>& point_locs, int levels, int point_count) { // finds which icosahedron triangle each dynamics point is in
+    vector<double> v1, v2, v3, point;
+    int iv1, iv2, iv3, lb, ub;
     point_locs.clear();
     tri_points.clear();
     point_locs.push_back(vector<int> (point_count, 0));
-    // tri_points.push_back(vector<vector<int>> (20, vector<int> (0)));
     tri_points[0] = vector<vector<int>> (20);
-    for (int i = 0; i < point_count; i++) {
+    for (int i = 0; i < point_count; i++) { // finds the placement of each point in the initial icosahedron
         point = slice(points, 5 * i, 1, 3);
-        // iv1 = tri_verts[0][point_locs[0][i]][0];
-        // iv2 = tri_verts[0][point_locs[0][i]][1];
-        // iv3 = tri_verts[0][point_locs[0][i]][2];
-        // v1 = verts[iv1];
-        // v2 = verts[iv2];
-        // v3 = verts[iv3];
-        // if (check_in_tri(v1, v2, v3, point)) {
-        //     continue;
-        // } else {
-        //     for (int j = 0; j < 20; j++) {
-        //         iv1 = tri_verts[0][j][0];
-        //         iv2 = tri_verts[0][j][1];
-        //         iv3 = tri_verts[0][j][2];
-        //         v1 = verts[iv1];
-        //         v2 = verts[iv2];
-        //         v3 = verts[iv3];
-        //         if (check_in_tri(v1, v2, v3, point)) {
-        //             point_locs[0][i] = j;
-        //             tri_points[0][j].push_back(i);
-        //             cout << "point i " << i << " tri j " << j << endl;
-        //             break;
-        //         }
-        //     }
-        // }
         for (int j = 0; j < 20; j++) {
             iv1 = tri_verts[0][j][0];
             iv2 = tri_verts[0][j][1];
@@ -383,19 +352,17 @@ void points_assign(vector<vector<vector<int>>>& tri_verts, vector<vector<double>
             if (check_in_tri(v1, v2, v3, point)) {
                 point_locs[0][i] = j;
                 tri_points[0][j].push_back(i);
-                // cout << "point i " << i << " tri j " << j << endl;
                 break;
             }
         }
     }
-    for (int i = 1; i < levels; i++) {
+    for (int i = 1; i < levels; i++) { // finds point loc in refined faces
         point_locs.push_back(vector<int> (point_count, 0));
-        // tri_points.push_back(vector<vector<int>> (20 * pow(4, i), vector<int> (0)));
         tri_points[i] = vector<vector<int>> (20 * pow(4, i));
         for (int j = 0; j < point_count; j++) {
             point = slice(points, 5 * j, 1, 3);
-            int lb = 4 * point_locs[i-1][j];
-            int ub = lb + 4;
+            lb = 4 * point_locs[i-1][j]; // utilize tree structure to minimize searching
+            ub = lb + 4;
             for (int k = lb; k < ub; k++) {
                 iv1 = tri_verts[i][k][0];
                 iv2 = tri_verts[i][k][1];
@@ -413,7 +380,7 @@ void points_assign(vector<vector<vector<int>>>& tri_verts, vector<vector<double>
     }
 }
 
-double interp_eval(vector<double>& alphas, double s, double t, int degree) {
+double interp_eval(vector<double>& alphas, double s, double t, int degree) { // evaluate interpolation polynomial with coefficients alpha and barycentric point (s, t)
     // return alphas[0] + alphas[1] * s + alphas[2] * t + alphas[3] * s * t + alphas[4] * s * s + alphas[5] * t * t;
     double accum = 0;
     int index;
@@ -426,7 +393,7 @@ double interp_eval(vector<double>& alphas, double s, double t, int degree) {
     return accum;
 }
 
-void fekete_init(vector<vector<double>>& points, int degree) {
+void fekete_init(vector<vector<double>>& points, int degree) { // initializes fekete matrix
     double delta_x = 1.0 / degree;
     int index;
     double a, b, c;
@@ -449,7 +416,7 @@ void fekete_init(vector<vector<double>>& points, int degree) {
     }
 }
 
-void interp_mat_init(vector<double>& mat, vector<vector<double>>& points, int degree, int point_count) {
+void interp_mat_init(vector<double>& mat, vector<vector<double>>& points, int degree, int point_count) { // sets up matrix to interpolate with fekete points
     int index, place;
     double a, b;
     for (int i = 0; i < degree + 1; i++) {
@@ -479,7 +446,7 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
         // curr_vor = curr_state[5 * i + 3];
         poss_tris = vert_tris[i];
         test_count = poss_tris.size();
-        for (int j = 0; j < test_count; j++) {
+        for (int j = 0; j < test_count; j++) { // first check triangles adjacent to initial point
             iv1 = triangles[poss_tris[j]][0];
             iv2 = triangles[poss_tris[j]][1];
             iv3 = triangles[poss_tris[j]][2];
@@ -487,7 +454,6 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
             v2 = slice(curr_state, 5 * iv2, 1, 3);
             v3 = slice(curr_state, 5 * iv3, 1, 3);
             if (check_in_tri(v1, v2, v3, curr_target)) {
-                // cout << "here" << endl;
                 bary = norm_barycoords(v1, v2, v3, curr_target);
                 target_points[5 * i + 3] = bary[0] * curr_state[5 * iv1 + 3] + bary[1] * curr_state[5 * iv2 + 3] + bary[2] * curr_state[5 * iv3 + 3];
                 target_points[5 * i + 4] = bary[0] * curr_state[5 * iv1 + 4] + bary[1] * curr_state[5 * iv2 + 4] + bary[2] * curr_state[5 * iv3 + 4];
@@ -500,7 +466,7 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
             continue;
         }
         failure += 1;
-        for (int j = 0; j < tri_count; j++) {
+        for (int j = 0; j < tri_count; j++) { // if point not found in adjacent triangles, search all of them
             iv1 = triangles[j][0];
             iv2 = triangles[j][1];
             iv3 = triangles[j][2];
@@ -517,7 +483,7 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
                 break;
             }
         }
-        if (not found) {
+        if (not found) { // hopefully not
             bad += 1;
         }
     }
