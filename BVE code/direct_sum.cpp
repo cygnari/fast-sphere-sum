@@ -48,6 +48,7 @@ int main() {
     vector<double> intermediate_2(5 * point_count);
     vector<double> intermediate_3(5 * point_count);
     vector<double> area(point_count, 4 * M_PI / point_count); // area associated with each particle
+    vector<int> state;
 
     vector<vector<int>> triangles(tri_count, vector<int> (3)); // triangles[i] is a length 3 int vector containing the indices of the points of the vertices
     vector<vector<int>> vert_tris(point_count); // vert_tris[i] is the int vector containing the indices of the triangles adjacent to point i
@@ -136,7 +137,10 @@ int main() {
         vec_add(c1234, c_4);
         scalar_mult(c1234, delta_t / 6);
         vec_add(c1234, curr_state); // c1234 is new state
-        regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count); // regrids points so that they are regular, modifies curr_state
+        regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega); // regrids points so that they are regular, modifies curr_state
+        state = amr(curr_state, triangles, vert_tris, area, tri_count, point_count, 1000000);
+        point_count = state[1];
+        tri_count = state[0];
         for (int i = 0; i < point_count; i++) {
             vector<double> projected = slice(curr_state, 5 * i, 1, 3);
             project_to_sphere(projected, 1);

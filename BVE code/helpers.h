@@ -222,10 +222,17 @@ int check_in_vec(vector<vector<double>>& x, vector<double>& y) { // checks if le
     return -1; // -1 if y not in x
 }
 
+int check_in_vec2(vector<double>& x, vector<double>& y, int max_points) { // checks if length 3 vector y is in state vector x
+    for (int i = 0; i < max_points; i++) {
+        if ((x[5 * i] == y[0]) and (x[5 * i + 1] == y[1]) and (x[5 * i + 2] == y[2])) return i; // index where y is in x
+    }
+    return -1; // -1 if y not in x
+}
+
 void icos_init(vector<vector<double>>& verts, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, double radius, int levels) { // initializes icosahedron for fast summation
     double phi = (1 + sqrt(5)) / 2;
     vector<double> center, v1, v2, v3, v12, v23, v31;
-    int iv1, iv2, iv3;
+    int iv1, iv2, iv3, iv12, iv23, iv13;
     verts.push_back(project_to_sphere_2(vector<double> {0, 1, phi}, radius)); // 12 starting points
     verts.push_back(project_to_sphere_2(vector<double> {0, -1, phi}, radius));
     verts.push_back(project_to_sphere_2(vector<double> {0, 1, -phi}, radius));
@@ -294,9 +301,9 @@ void icos_init(vector<vector<double>>& verts, vector<vector<vector<double>>>& tr
             project_to_sphere(v12, radius);
             project_to_sphere(v23, radius);
             project_to_sphere(v31, radius);
-            int iv12 = check_in_vec(verts, v12); // check if v12 already exists
-            int iv13 = check_in_vec(verts, v31);
-            int iv23 = check_in_vec(verts, v23);
+            iv12 = check_in_vec(verts, v12); // check if v12 already exists
+            iv13 = check_in_vec(verts, v31);
+            iv23 = check_in_vec(verts, v23);
             if (iv12 == -1) {
                 iv12 = verts.size();
                 verts.push_back(v12);
@@ -432,8 +439,24 @@ void interp_mat_init(vector<double>& mat, vector<vector<double>>& points, int de
     }
 }
 
-void regrid_points(vector<double>& curr_state, vector<double>& target_points, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, int point_count, int tri_count) { // remesh back to original particle locations
-    vector<double> curr_target, curr_pos, v1, v2, v3, bary;
+void tri_interp(int iv1, int iv2, int iv3, vector<double>& v1, vector<double>& v2, vector<double>& v3, vector<double>& curr_state, vector<double>& target_points, vector<double>& curr_target, int i, double omega) {
+    vector<double> bary;
+    double absv1, absv2, absv3, absv;
+    bary = norm_barycoords(v1, v2, v3, curr_target);
+    // interpolate relative vorticity directly; results are decent
+    // target_points[5 * i + 3] = bary[0] * curr_state[5 * iv1 + 3] + bary[1] * curr_state[5 * iv2 + 3] + bary[2] * curr_state[5 * iv3 + 3];
+    // interpolate absolute vorticity; very similar results to interpolating relative vorticity directly, still diffusive
+    absv1 = curr_state[5 * iv1 + 3] + 2 * omega * curr_state[5 * iv1 + 2];
+    absv2 = curr_state[5 * iv2 + 3] + 2 * omega * curr_state[5 * iv2 + 2];
+    absv3 = curr_state[5 * iv3 + 3] + 2 * omega * curr_state[5 * iv3 + 2];
+    absv = bary[0] * absv1 + bary[1] * absv2 + bary[2] * absv3;
+    target_points[5 * i + 3] = absv - 2 * omega * curr_target[2];
+    // interpolate passive tracer
+    target_points[5 * i + 4] = bary[0] * curr_state[5 * iv1 + 4] + bary[1] * curr_state[5 * iv2 + 4] + bary[2] * curr_state[5 * iv3 + 4];
+}
+
+void regrid_points(vector<double>& curr_state, vector<double>& target_points, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, int point_count, int tri_count, double omega) { // remesh back to original particle locations
+    vector<double> curr_target, curr_pos, v1, v2, v3; // need to fix vorticity remeshing
     vector<int> poss_tris;
     double curr_vor;
     int test_count, iv1, iv2, iv3;
@@ -454,9 +477,7 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
             v2 = slice(curr_state, 5 * iv2, 1, 3);
             v3 = slice(curr_state, 5 * iv3, 1, 3);
             if (check_in_tri(v1, v2, v3, curr_target)) {
-                bary = norm_barycoords(v1, v2, v3, curr_target);
-                target_points[5 * i + 3] = bary[0] * curr_state[5 * iv1 + 3] + bary[1] * curr_state[5 * iv2 + 3] + bary[2] * curr_state[5 * iv3 + 3];
-                target_points[5 * i + 4] = bary[0] * curr_state[5 * iv1 + 4] + bary[1] * curr_state[5 * iv2 + 4] + bary[2] * curr_state[5 * iv3 + 4];
+                tri_interp(iv1, iv2, iv3, v1, v2, v3, curr_state, target_points, curr_target, i, omega);
                 success += 1;
                 found = true;
                 break;
@@ -474,9 +495,7 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
             v2 = slice(curr_state, 5 * iv2, 1, 3);
             v3 = slice(curr_state, 5 * iv3, 1, 3);
             if (check_in_tri(v1, v2, v3, curr_target)) {
-                bary = norm_barycoords(v1, v2, v3, curr_target);
-                target_points[5 * i + 3] = bary[0] * curr_state[5 * iv1 + 3] + bary[1] * curr_state[5 * iv2 + 3] + bary[2] * curr_state[5 * iv3 + 3];
-                target_points[5 * i + 4] = bary[0] * curr_state[5 * iv1 + 4] + bary[1] * curr_state[5 * iv2 + 4] + bary[2] * curr_state[5 * iv3 + 4];
+                tri_interp(iv1, iv2, iv3, v1, v2, v3, curr_state, target_points, curr_target, i, omega);
                 found = true;
                 // cout << "point: " << i << " in triangle: " << j << " bary cords: " << bary[0] << " " << bary[1] << " " << bary[2] << endl;
                 // cout << "curr vor: " << curr_vor << " vert vors " << curr_state[5 * iv1 + 3] << " " << curr_state[5 * iv2 + 3] << " " << curr_state[5 * iv3 + 3] <<  endl;
@@ -490,15 +509,50 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
     // cout << "success: " << success << " failure: " << failure << " bad: " << bad << endl;
 }
 
+vector<int> big_tri_verts(vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, int iv1, int iv2, int iv3) {
+    vector<int> points, iv1tris, iv2tris, iv3tris, v1tris, v2tris, v3tris;
+    iv1tris = vert_tris[iv1];
+    iv2tris = vert_tris[iv2];
+    iv3tris = vert_tris[iv3];
+    return points;
+}
+
+int find_overlap(vector<int>& array1, vector<int>& array2, vector<int>& array3) { // finds common element of all 3 arrays
+    int common;
+    for (int i = 0; i < array1.size(); i++) {
+        common = array1[i];
+        for (int j = 0; j < array2.size(); j++) {
+            if (common == array2[j]) {
+                for (int k = 0; k < array3.size(); k++) {
+                    if (common == array3[k]) return common; // return the common element
+                }
+            }
+        }
+    }
+    return -1; // something is wrong
+}
+
+void replace(vector<int>& vals, int find, int replacement) { // replace find in vals with replacement
+    for (int i = 0; i < vals.size(); i++) {
+        if (vals[i] == find) {
+            vals[i] = replacement;
+            break;
+        }
+    }
+}
+
 vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, vector<double>& areas, int tri_count, int point_count, int max_points) { // adaptive mesh refinement
-    double refine_threshold = 1;
-    int iv1, iv2, iv3, iv12, iv23, iv31;
-    double vor1, vor2, vor3, max_val, min_val, vor1n, vor2n, vor3n, mean, var;
+    double circulation_tol = 0.0025;
+    double vorticity_tol = 0.2;
+    int iv1, iv2, iv3, iv12, iv23, iv31, itri, itriv1v12v31, itriv2v12v23, itriv3v31v23, itriv12v23v31, old_tri_count;
+    double vor1, vor2, vor3, max_val, min_val, vor1n, vor2n, vor3n, circulation, tri_area;
     vector<double> v1, v2, v3, v12, v23, v31;
     vector<int> return_values {tri_count, point_count}; // return new tri_count and point_count;
+    vector<int> iv1tris, iv2tris, iv3tris;
     if (point_count >= max_points) return return_values;
     else {
-        for (int i = 0; i < tri_count; i++) {
+        old_tri_count = tri_count;
+        for (int i = 0; i < old_tri_count; i++) { // work on each triangle
             iv1 = triangles[i][0];
             iv2 = triangles[i][1];
             iv3 = triangles[i][2];
@@ -507,8 +561,73 @@ vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vect
             vor3 = curr_state[4 * iv3 + 3];
             max_val = max(vor1, max(vor2, vor3));
             min_val = min(vor1, min(vor2, vor3));
-            if (max_val - min_val > refine_threshold) { // if over threshold, refine
-                // refine
+            tri_area = (areas[iv1] + areas[iv2] + areas[iv3]) / 6.0;
+            circulation =  tri_area * (vor1 + vor2 + vor3) / 3.0;
+            if (((max_val - min_val) > vorticity_tol) and (circulation > circulation_tol) and (point_count < max_points)) { // if over threshold, refine
+                areas[iv1] -= tri_area / 6.0;
+                areas[iv2] -= tri_area / 6.0;
+                areas[iv3] -= tri_area / 6.0;
+                v12 = v1;
+                v23 = v2;
+                v31 = v3;
+                vec_add(v12, v2);
+                vec_add(v23, v3);
+                vec_add(v31, v1);
+                scalar_mult(v12, 0.5);
+                scalar_mult(v23, 0.5);
+                scalar_mult(v31, 0.5);
+                iv12 = check_in_vec2(curr_state, v12, point_count);
+                iv23 = check_in_vec2(curr_state, v23, point_count);
+                iv31 = check_in_vec2(curr_state, v31, point_count);
+                if (iv12 == -1) { // v12 is a new point
+                    iv12 = point_count;
+                    curr_state.insert(curr_state.end(), v12.begin(), v12.end());
+                    point_count += 1;
+                    areas.insert(areas.end(), tri_area / 6.0);
+                    vert_tris.push_back(vector<int> (0));
+                } else { // v12 is not new
+                    areas[iv12] += tri_area / 6.0;
+                }
+                if (iv23 == -1) { // v23 is a new point
+                    iv23 = point_count;
+                    curr_state.insert(curr_state.end(), v23.begin(), v23.end());
+                    point_count += 1;
+                    areas.insert(areas.end(), tri_area / 6.0);
+                    vert_tris.push_back(vector<int> (0));
+                } else { // v23 is not a new point
+                    areas[iv23] += tri_area / 6.0;
+                }
+                if (iv31 == -1) { // v31 is a new point
+                    iv31 = point_count;
+                    curr_state.insert(curr_state.end(), v31.begin(), v31.end());
+                    point_count += 1;
+                    areas.insert(areas.end(), tri_area / 6.0);
+                    vert_tris.push_back(vector<int> (0));
+                }  else {
+                    areas[iv31] += tri_area / 6.0;
+                }
+                triangles[i] = {iv1, iv12, iv31};
+                itriv1v12v31 = itri;
+                triangles.push_back({iv2, iv12, iv23});
+                itriv2v12v23 = tri_count;
+                tri_count += 1;
+                triangles.push_back({iv3, iv31, iv23});
+                itriv3v31v23 = tri_count;
+                tri_count += 1;
+                triangles.push_back({iv12, iv23, iv31});
+                itriv12v23v31 = tri_count;
+                tri_count += 1;
+                replace(vert_tris[iv2], itri, itriv2v12v23);
+                replace(vert_tris[iv3], itri, itriv3v31v23);
+                vert_tris[iv12].insert(vert_tris[iv12].end(), i);
+                vert_tris[iv12].insert(vert_tris[iv12].end(), itriv2v12v23);
+                vert_tris[iv12].insert(vert_tris[iv12].end(), itriv12v23v31);
+                vert_tris[iv23].insert(vert_tris[iv12].end(), itriv2v12v23);
+                vert_tris[iv23].insert(vert_tris[iv12].end(), itriv3v31v23);
+                vert_tris[iv23].insert(vert_tris[iv12].end(), itriv12v23v31);
+                vert_tris[iv31].insert(vert_tris[iv12].end(), itriv1v12v31);
+                vert_tris[iv31].insert(vert_tris[iv12].end(), itriv3v31v23);
+                vert_tris[iv31].insert(vert_tris[iv12].end(), itriv12v23v31);
             } else { // do not refine if not over threshold
                 continue;
             }
