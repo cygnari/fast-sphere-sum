@@ -35,7 +35,7 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, double t, dou
 
 int main() {
     double delta_t = 0.01, end_t = 1;
-    int point_count = 2562, tri_count = 5120, time_steps = end_t / delta_t;
+    int point_count = 2562, tri_count = 5120, time_steps = end_t / delta_t, max_points = 1000000;
     double omega = 2 * M_PI; // coriolis factor
 
     vector<double> curr_state(5 * point_count); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity, 4 is passive tracer
@@ -47,11 +47,13 @@ int main() {
     vector<double> intermediate_1(5 * point_count);
     vector<double> intermediate_2(5 * point_count);
     vector<double> intermediate_3(5 * point_count);
-    vector<double> area(point_count, 4 * M_PI / point_count); // area associated with each particle
+    // vector<double> area(point_count, 4 * M_PI / point_count); // area associated with each particle
+    vector<double> area(point_count, 0);
     vector<int> state;
 
     vector<vector<int>> triangles(tri_count, vector<int> (3)); // triangles[i] is a length 3 int vector containing the indices of the points of the vertices
     vector<vector<int>> vert_tris(point_count); // vert_tris[i] is the int vector containing the indices of the triangles adjacent to point i
+    vector<vector<int>> parent_verts(max_points, vector<int> (2, 0)); //
 
     ifstream file1("../points.csv"); // ifstream = input file stream
     ifstream file2("../tris.csv");
@@ -60,8 +62,9 @@ int main() {
     string line, word;
     int tri_counts;
 
-    ofstream write_out; // ofstream = output file stream
-    write_out.open("direct_output.csv", ofstream::out | ofstream::trunc);
+    ofstream write_out1("direct_output.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
+    ofstream write_out2("direct_point_counts.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
+    // write_out1.open("direct_output.csv", ofstream::out | ofstream::trunc);
 
     for (int i = 0; i < point_count; i++) {
         getline(file1, line);
@@ -107,15 +110,56 @@ int main() {
         curr_state[5 * i + 4] = lat; // initial latitude as passive tracer
     }
 
+    int iv1, iv2, iv3;
+    double curr_area;
+    vector<double> v1, v2, v3;
+    for (int i = 0; i < tri_count; i++) {
+        // cout << i << endl;
+        iv1 = triangles[i][0];
+        iv2 = triangles[i][1];
+        iv3 = triangles[i][2];
+        // cout << iv1 << " " << iv2 << " " << iv3 << endl;
+        v1 = slice(curr_state, 5 * iv1, 1, 3);
+        v2 = slice(curr_state, 5 * iv2, 1, 3);
+        v3 = slice(curr_state, 5 * iv3, 1, 3);
+        curr_area = sphere_tri_area(v1, v2, v3, 1);
+        area[iv1] += curr_area / 3.0;
+        area[iv2] += curr_area / 3.0;
+        area[iv3] += curr_area / 3.0;
+    }
+
+    // v1 = {0, 0, 1};
+    // v2 = {0, 1, 0};
+    // v3 = {1, 0, 0};
+    // cout << sphere_tri_area(v1, v2, v3, 1) << endl;
+
+    // double total_area = 0;
+    // for (int i = 0; i < point_count; i++) {
+    //     // cout << area[i] - 4 * M_PI / point_count << endl;
+    //     total_area += area[i];
+    // }
+    // cout << total_area - 4 * M_PI << endl;
+
+    // cout << "here" << endl;
+
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
     for (int i = 0; i < point_count; i++) { // write out initial state
-        write_out << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "\n";
+        write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "\n";
     }
+    write_out2 << point_count << "\n";
 
     for (int t = 0; t < time_steps; t++) { // time iterate with RK4
     // for (int t = 0; t < 1; t++) {
         double curr_time = t * delta_t;
+        vector<double> c_1(5 * point_count, 0);
+        vector<double> c_2(5 * point_count, 0);
+        vector<double> c_3(5 * point_count, 0);
+        vector<double> c_4(5 * point_count, 0);
+        vector<double> c1234(5 * point_count, 0);
+        vector<double> intermediate_1(5 * point_count);
+        vector<double> intermediate_2(5 * point_count);
+        vector<double> intermediate_3(5 * point_count);
         BVE_ffunc(c_1, curr_state, curr_time, delta_t, omega, area, point_count);
         intermediate_1 = c_1;
         scalar_mult(intermediate_1, delta_t / 2);
@@ -138,21 +182,23 @@ int main() {
         scalar_mult(c1234, delta_t / 6);
         vec_add(c1234, curr_state); // c1234 is new state
         regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega); // regrids points so that they are regular, modifies curr_state
-        state = amr(curr_state, triangles, vert_tris, area, tri_count, point_count, 1000000);
+        state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
         point_count = state[1];
         tri_count = state[0];
         for (int i = 0; i < point_count; i++) {
             vector<double> projected = slice(curr_state, 5 * i, 1, 3);
             project_to_sphere(projected, 1);
             for (int j = 0; j < 3; j++) curr_state[5 * i + j] = projected[j]; // reproject points to surface of sphere
-            write_out << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "\n"; // write current state
+            write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "\n"; // write current state
         }
-        cout << t << endl;
+        write_out2 << point_count << "\n";
+        cout << "t: " << t << " point_count " << point_count << endl;
     }
 
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
     cout << "time taken: " << chrono::duration_cast<chrono::microseconds>(end - begin).count() << " microseconds" << endl;
 
-    write_out.close();
+    write_out1.close();
+    write_out2.close();
     return 0;
 }

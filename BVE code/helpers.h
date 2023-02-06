@@ -93,18 +93,23 @@ vector<double> project_to_sphere_2(vector<double> p1, double radius) { // projec
 double sphere_tri_area(vector<double>& p1, vector<double>& p2, vector<double>& p3, double radius) { // finds the area of a spherical triangle
     assert (p1.size() == p2.size());
     assert (p1.size() == p3.size());
-    vector<double> p1n = p1; // don't modify p1, modify p1n
-    vector<double> p2n = p2;
-    vector<double> p3n = p3;
+    vector<double> p1n, p2n, p3n;
+    double a, b, c, s, z, area;
+    p1n = p1; // don't modify p1, modify p1n
+    p2n = p2;
+    p3n = p3;
     vec_minus(p2n, p3); // p2n = p2 - p3
     vec_minus(p3n, p1); // p3n = p3 - p1
     vec_minus(p1n, p2); // p1n = p1- p2
-    double a = acos(1 - 0.5 * vec_norm(p2n));
-    double b = acos(1 - 0.5 * vec_norm(p3n));
-    double c = acos(1 - 0.5 * vec_norm(p1n));
-    double s = (a + b + c) / 2;
-    double z = tan(s / 2) * tan((s - a) / 2) * tan((s - b) / 2) * tan((s - c) / 2);
-    double area = 4 * radius * radius * atan(sqrt(z));
+    // double a = acos(1 - 0.5 * vec_norm(p2n));
+    // double b = acos(1 - 0.5 * vec_norm(p3n));
+    // double c = acos(1 - 0.5 * vec_norm(p1n));
+    a = acos(1 - 0.5 * dot_prod(p2n, p2n));
+    b = acos(1 - 0.5 * dot_prod(p3n, p3n));
+    c = acos(1 - 0.5 * dot_prod(p1n, p1n));
+    s = (a + b + c) / 2;
+    z = tan(s / 2) * tan((s - a) / 2) * tan((s - b) / 2) * tan((s - c) / 2);
+    area = 4 * radius * radius * atan(sqrt(z));
     return area;
 }
 
@@ -223,10 +228,23 @@ int check_in_vec(vector<vector<double>>& x, vector<double>& y) { // checks if le
 }
 
 int check_in_vec2(vector<double>& x, vector<double>& y, int max_points) { // checks if length 3 vector y is in state vector x
+    // cout << "check in vec 2" << endl;
+    // cout << x.size() << " " << 5 * max_points << endl;
+    // cout << "y size " << y.size() << endl;
+    // cout << x[5 * (max_points - 1) + 2] << " " << y[2] << endl;
     for (int i = 0; i < max_points; i++) {
-        if ((x[5 * i] == y[0]) and (x[5 * i + 1] == y[1]) and (x[5 * i + 2] == y[2])) return i; // index where y is in x
+        // cout << 5 * i + 2 << endl;
+        // if ((x[5 * i] == y[0]) and (x[5 * i + 1] == y[1]) and (x[5 * i + 2] == y[2])) return i; // index where y is in x
+        if ((abs(x[5 * i] - y[0]) < 1.0 / max_points) and (abs(x[5 * i + 1] - y[1]) < 1.0 / max_points) and (abs(x[5 * i + 2] - y[2]) < 1.0 / max_points)) return i;
     }
     return -1; // -1 if y not in x
+}
+
+int check_in_vec3(vector<vector<int>>& parent_verts, int v1, int v2) {
+    for (int i = 0; i < parent_verts.size(); i++) {
+        if ((parent_verts[i][0] == v1) and (parent_verts[i][1] == v2)) return i;
+    }
+    return -1;
 }
 
 void icos_init(vector<vector<double>>& verts, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, double radius, int levels) { // initializes icosahedron for fast summation
@@ -463,16 +481,24 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
     int success = 0, failure = 0, bad = 0;
     bool found;
     for (int i = 0; i < point_count; i++) {
+        // cout << "regrid: " << i << endl;
         found = false;
         curr_target = slice(target_points, 5 * i, 1, 3);
         curr_pos = slice(curr_state, 5 * i, 1, 3);
         // curr_vor = curr_state[5 * i + 3];
         poss_tris = vert_tris[i];
         test_count = poss_tris.size();
+        // cout << "test count " << test_count << endl;
+        // for (int j = 0; j < test_count; j++) cout << poss_tris[j] << endl;
         for (int j = 0; j < test_count; j++) { // first check triangles adjacent to initial point
+            // cout << "test triangle " << j << endl;
+            // cout << "possible triangle j " << poss_tris[j] << endl;
             iv1 = triangles[poss_tris[j]][0];
+            // cout << "iv1 " << iv1 << endl;
             iv2 = triangles[poss_tris[j]][1];
+            // cout << "iv2 " << iv2 << endl;
             iv3 = triangles[poss_tris[j]][2];
+            // cout << "iv3 " << iv3 << endl;
             v1 = slice(curr_state, 5 * iv1, 1, 3);
             v2 = slice(curr_state, 5 * iv2, 1, 3);
             v3 = slice(curr_state, 5 * iv3, 1, 3);
@@ -517,20 +543,20 @@ vector<int> big_tri_verts(vector<vector<int>>& triangles, vector<vector<int>>& v
     return points;
 }
 
-int find_overlap(vector<int>& array1, vector<int>& array2, vector<int>& array3) { // finds common element of all 3 arrays
-    int common;
-    for (int i = 0; i < array1.size(); i++) {
-        common = array1[i];
-        for (int j = 0; j < array2.size(); j++) {
-            if (common == array2[j]) {
-                for (int k = 0; k < array3.size(); k++) {
-                    if (common == array3[k]) return common; // return the common element
-                }
-            }
-        }
-    }
-    return -1; // something is wrong
-}
+// int find_overlap(vector<int>& array1, vector<int>& array2, vector<int>& array3) { // finds common element of all 3 arrays
+//     int common;
+//     for (int i = 0; i < array1.size(); i++) {
+//         common = array1[i];
+//         for (int j = 0; j < array2.size(); j++) {
+//             if (common == array2[j]) {
+//                 for (int k = 0; k < array3.size(); k++) {
+//                     if (common == array3[k]) return common; // return the common element
+//                 }
+//             }
+//         }
+//     }
+//     return -1; // something is wrong
+// }
 
 void replace(vector<int>& vals, int find, int replacement) { // replace find in vals with replacement
     for (int i = 0; i < vals.size(); i++) {
@@ -541,10 +567,10 @@ void replace(vector<int>& vals, int find, int replacement) { // replace find in 
     }
 }
 
-vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, vector<double>& areas, int tri_count, int point_count, int max_points) { // adaptive mesh refinement
+vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, vector<double>& areas, vector<vector<int>>& parent_verts, int tri_count, int point_count, int max_points) { // adaptive mesh refinement
     double circulation_tol = 0.0025;
     double vorticity_tol = 0.2;
-    int iv1, iv2, iv3, iv12, iv23, iv31, itri, itriv1v12v31, itriv2v12v23, itriv3v31v23, itriv12v23v31, old_tri_count;
+    int iv1, iv2, iv3, iv12, iv23, iv31,  itriv1v12v31, itriv2v12v23, itriv3v31v23, itriv12v23v31, old_tri_count;
     double vor1, vor2, vor3, max_val, min_val, vor1n, vor2n, vor3n, circulation, tri_area;
     vector<double> v1, v2, v3, v12, v23, v31;
     vector<int> return_values {tri_count, point_count}; // return new tri_count and point_count;
@@ -553,6 +579,7 @@ vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vect
     else {
         old_tri_count = tri_count;
         for (int i = 0; i < old_tri_count; i++) { // work on each triangle
+            // cout << "triangle: " << i << endl;
             iv1 = triangles[i][0];
             iv2 = triangles[i][1];
             iv3 = triangles[i][2];
@@ -564,9 +591,13 @@ vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vect
             tri_area = (areas[iv1] + areas[iv2] + areas[iv3]) / 6.0;
             circulation =  tri_area * (vor1 + vor2 + vor3) / 3.0;
             if (((max_val - min_val) > vorticity_tol) and (circulation > circulation_tol) and (point_count < max_points)) { // if over threshold, refine
+                // cout << "amr" << endl;
                 areas[iv1] -= tri_area / 6.0;
                 areas[iv2] -= tri_area / 6.0;
                 areas[iv3] -= tri_area / 6.0;
+                v1 = slice(curr_state, 5 * iv1, 1, 5);
+                v2 = slice(curr_state, 5 * iv2, 1, 5);
+                v3 = slice(curr_state, 5 * iv3, 1, 5);
                 v12 = v1;
                 v23 = v2;
                 v31 = v3;
@@ -576,15 +607,32 @@ vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vect
                 scalar_mult(v12, 0.5);
                 scalar_mult(v23, 0.5);
                 scalar_mult(v31, 0.5);
-                iv12 = check_in_vec2(curr_state, v12, point_count);
-                iv23 = check_in_vec2(curr_state, v23, point_count);
-                iv31 = check_in_vec2(curr_state, v31, point_count);
+                // cout << v12[0] << " " << curr_state[0] << endl;
+                // cout << "point_count " << point_count << endl;
+                // cout << 1 << endl;
+                // iv12 = check_in_vec2(curr_state, v12, point_count);
+                iv12 = check_in_vec3(parent_verts, min(iv1, iv2), max(iv1, iv2));
+                iv23 = check_in_vec3(parent_verts, min(iv3, iv2), max(iv3, iv2));
+                iv31 = check_in_vec3(parent_verts, min(iv1, iv3), max(iv1, iv3));
+                // cout << 2 << endl;
+                // iv23 = check_in_vec2(curr_state, v23, point_count);
+                // cout << 3 << endl;
+                // iv31 = check_in_vec2(curr_state, v31, point_count);
+                // cout << 4 << endl;
                 if (iv12 == -1) { // v12 is a new point
                     iv12 = point_count;
                     curr_state.insert(curr_state.end(), v12.begin(), v12.end());
                     point_count += 1;
                     areas.insert(areas.end(), tri_area / 6.0);
-                    vert_tris.push_back(vector<int> (0));
+                    vert_tris.push_back(vector<int> (0, 0));
+                    parent_verts[iv12][0] = min(iv1, iv2);
+                    parent_verts[iv12][1] = max(iv1, iv2);
+                    // if (iv12 == 3907) {
+                    //     cout << "iv12 3907: " << iv1 << " " << iv2 << endl;
+                    // }
+                    // if (iv12 == 3451) {
+                    //     cout << "iv12 3451: " << iv1 << " " << iv2 << endl;
+                    // }
                 } else { // v12 is not new
                     areas[iv12] += tri_area / 6.0;
                 }
@@ -593,7 +641,18 @@ vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vect
                     curr_state.insert(curr_state.end(), v23.begin(), v23.end());
                     point_count += 1;
                     areas.insert(areas.end(), tri_area / 6.0);
-                    vert_tris.push_back(vector<int> (0));
+                    vert_tris.push_back(vector<int> (0, 0));
+                    parent_verts[iv23][0] = min(iv2, iv3);
+                    parent_verts[iv23][1] = max(iv2, iv3);
+                    // if (iv23 == 3907) {
+                    //     cout << "iv23 3907: " << iv2 << " " << iv3 << endl;
+                    // }
+                    // if (iv23 == 3451) {
+                    //     cout << "iv23 3451: " << iv2 << " " << iv3 << endl;
+                    //     cout << "v23: " << v23[0] << " " << v23[1] << " " << v23[2] << endl;
+                    //     cout << "v2: " << v2[0] << " " << v2[1] << " " << v2[2] << endl;
+                    //     cout << "v3: " << v3[0] << " " << v3[1] << " " << v3[2] << endl;
+                    // }
                 } else { // v23 is not a new point
                     areas[iv23] += tri_area / 6.0;
                 }
@@ -602,12 +661,26 @@ vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vect
                     curr_state.insert(curr_state.end(), v31.begin(), v31.end());
                     point_count += 1;
                     areas.insert(areas.end(), tri_area / 6.0);
-                    vert_tris.push_back(vector<int> (0));
+                    vert_tris.push_back(vector<int> (0, 0));
+                    parent_verts[iv31][0] = min(iv1, iv3);
+                    parent_verts[iv31][1] = max(iv1, iv3);
+                    // if (iv31 == 3907) {
+                    //     cout << "iv31 3907: " << iv1 << " " << iv3 << endl;
+                    //     cout << "v31: " << v31[0] << " " << v31[1] << " " << v31[2] << endl;
+                    //     cout << "v1: " << v1[0] << " " << v1[1] << " " << v1[2] << endl;
+                    //     cout << "v3: " << v3[0] << " " << v3[1] << " " << v3[2] << endl;
+                    //     cout << "diff: " << v31[0] - curr_state[5 * 3451] << " " << v31[1] - curr_state[5 * 3451 + 1] << " " << v31[2] - curr_state[5 * 3451 + 2] << endl;
+                    //     // cout << "diff2: " <<
+                    // }
+                    // if (iv31 == 3451) {
+                    //     cout << "iv31 3451: " << iv1 << " " << iv3 << endl;
+                    // }
                 }  else {
                     areas[iv31] += tri_area / 6.0;
                 }
+                // cout << 5 << endl;
                 triangles[i] = {iv1, iv12, iv31};
-                itriv1v12v31 = itri;
+                itriv1v12v31 = i;
                 triangles.push_back({iv2, iv12, iv23});
                 itriv2v12v23 = tri_count;
                 tri_count += 1;
@@ -617,17 +690,25 @@ vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vect
                 triangles.push_back({iv12, iv23, iv31});
                 itriv12v23v31 = tri_count;
                 tri_count += 1;
-                replace(vert_tris[iv2], itri, itriv2v12v23);
-                replace(vert_tris[iv3], itri, itriv3v31v23);
+                // cout << 6 << endl;
+                // cout << "iv31 " << iv31 << " new triangles " << itriv1v12v31 << " " << itriv3v31v23 << " " << itriv12v23v31 << endl;
+                replace(vert_tris[iv2], i, itriv2v12v23);
+                replace(vert_tris[iv3], i, itriv3v31v23);
+                // cout << 7 << endl;
                 vert_tris[iv12].insert(vert_tris[iv12].end(), i);
+                // cout << 7.1 << endl;
                 vert_tris[iv12].insert(vert_tris[iv12].end(), itriv2v12v23);
+                // cout << 7.2 << endl;
                 vert_tris[iv12].insert(vert_tris[iv12].end(), itriv12v23v31);
-                vert_tris[iv23].insert(vert_tris[iv12].end(), itriv2v12v23);
-                vert_tris[iv23].insert(vert_tris[iv12].end(), itriv3v31v23);
-                vert_tris[iv23].insert(vert_tris[iv12].end(), itriv12v23v31);
-                vert_tris[iv31].insert(vert_tris[iv12].end(), itriv1v12v31);
-                vert_tris[iv31].insert(vert_tris[iv12].end(), itriv3v31v23);
-                vert_tris[iv31].insert(vert_tris[iv12].end(), itriv12v23v31);
+                // cout << 7.3 << endl;
+                vert_tris[iv23].insert(vert_tris[iv23].end(), itriv2v12v23);
+                // cout << 7.4 << endl;
+                vert_tris[iv23].insert(vert_tris[iv23].end(), itriv3v31v23);
+                vert_tris[iv23].insert(vert_tris[iv23].end(), itriv12v23v31);
+                vert_tris[iv31].insert(vert_tris[iv31].end(), itriv1v12v31);
+                vert_tris[iv31].insert(vert_tris[iv31].end(), itriv3v31v23);
+                vert_tris[iv31].insert(vert_tris[iv31].end(), itriv12v23v31);
+                // cout << 8 << endl;
             } else { // do not refine if not over threshold
                 continue;
             }
