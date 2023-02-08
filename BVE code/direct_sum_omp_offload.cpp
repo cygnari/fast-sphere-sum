@@ -87,6 +87,19 @@ int main() {
     }
 #pragma omp target
 { // offload to gpu
+    if (omp_is_initial_device()) {
+
+      printf("Running on host\n");
+
+    } else {
+
+      int nteams= omp_get_num_teams();
+
+      int nthreads= omp_get_num_threads();
+
+      printf("Running on device with %d teams in total and %d threads in each team\n",nteams,nthreads);
+
+    }
     for (int t = 0; t < 1; t++) { // time iterate with RK4
         double curr_time = t * delta_t;
         // for (int i = 0; i < point_count; i++) {

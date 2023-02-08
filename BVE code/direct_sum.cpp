@@ -34,7 +34,7 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, double t, dou
 }
 
 int main() {
-    double delta_t = 0.01, end_t = 1;
+    double delta_t = 0.01, end_t = 1; // end_t = number of days
     int point_count = 2562, tri_count = 5120, time_steps = end_t / delta_t, max_points = 1000000;
     double omega = 2 * M_PI; // coriolis factor
 
@@ -145,7 +145,7 @@ int main() {
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
     for (int i = 0; i < point_count; i++) { // write out initial state
-        write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "\n";
+        write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] <<  "," << area[i] << "\n";
     }
     write_out2 << point_count << "\n";
 
@@ -189,7 +189,7 @@ int main() {
             vector<double> projected = slice(curr_state, 5 * i, 1, 3);
             project_to_sphere(projected, 1);
             for (int j = 0; j < 3; j++) curr_state[5 * i + j] = projected[j]; // reproject points to surface of sphere
-            write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "\n"; // write current state
+            write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "," << area[i] << "\n"; // write current state
         }
         write_out2 << point_count << "\n";
         cout << "t: " << t << " point_count " << point_count << endl;
