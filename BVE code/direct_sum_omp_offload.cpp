@@ -12,6 +12,8 @@
 #include "helpers.h"
 
 // time taken: 103913287 microseconds / 103.9 seconds for 2562 particles, 100 time steps, flattened + O3
+// 2562 points = 5120 tris
+// 10242 points = 20480 tris
 
 using namespace std;
 
@@ -46,6 +48,7 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, double t, dou
 #define point_count 2562
 
 int main() {
+#pragma omp declare target
     double delta_t = 0.01, end_t = 1;
     double omega = 2 * M_PI;
     int time_steps = end_t / delta_t;
@@ -68,6 +71,10 @@ int main() {
     string line, word;
 
     ofstream write_out;
+    chrono::steady_clock::time_point begin, end;
+#pragma omp end declare target
+#pragma omp target
+{
     write_out.open("direct_output.csv", ofstream::out | ofstream::trunc);
 
     for (int i = 0; i < point_count; i++) {
@@ -79,14 +86,14 @@ int main() {
         }
     }
 
-    chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+    begin = chrono::steady_clock::now();
 
     // write out initial state
     for (int i = 0; i < point_count; i++) {
         write_out << curr_state[4 * i] << "," << curr_state[4 * i + 1] << "," << curr_state[4 * i + 2] << "," << curr_state[4 * i + 3] << "\n";
     }
-#pragma omp target
-{ // offload to gpu
+// #pragma omp target
+// { // offload to gpu
     if (omp_is_initial_device()) {
 
       printf("Running on host\n");
@@ -162,7 +169,7 @@ int main() {
     }
 }
 
-    chrono::steady_clock::time_point end = chrono::steady_clock::now();
+    end = chrono::steady_clock::now();
     cout << "time taken: " << chrono::duration_cast<chrono::microseconds>(end - begin).count() << " microseconds" << endl;
 
 
