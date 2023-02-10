@@ -55,10 +55,10 @@ int main() {
     vector<vector<int>> vert_tris(point_count); // vert_tris[i] is the int vector containing the indices of the triangles adjacent to point i
     vector<vector<int>> parent_verts(max_points, vector<int> (2, 0)); //
 
-    ifstream file1("../points.csv"); // ifstream = input file stream
-    ifstream file2("../tris.csv");
-    ifstream file3("../vert_tris.csv");
-    ifstream file4("../vert_tri_count.csv");
+    ifstream file1("../2562points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../2562tris.csv");
+    ifstream file3("../2562vert_tris.csv");
+    ifstream file4("../2562vert_tri_count.csv");
     string line, word;
     int tri_counts;
 
