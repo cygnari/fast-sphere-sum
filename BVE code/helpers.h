@@ -7,7 +7,7 @@
 #include <cmath>
 #include <array>
 #include <vector>
-// #include <Accelerate/Accelerate.h>
+#include <Accelerate/Accelerate.h>
 #include <cassert>
 #include <algorithm>
 
@@ -421,22 +421,28 @@ double interp_eval(vector<double>& alphas, double s, double t, int degree) { // 
 void fekete_init(vector<vector<double>>& points, int degree) { // initializes fekete matrix
     double delta_x = 1.0 / degree;
     int index;
-    double a, b, c;
+    double a, b, c, d, e, f, g;
     for (int i = 0; i < degree + 1; i++) {
         a = 1 - i * delta_x;
         for (int j = 0; j < i + 1; j++) {
             index = i * (i + 1) / 2 + j;
             c = j * delta_x;
             b = 1 - a - b;
-            // a = 0.5 * (1 + sin(M_PI / 2 * (2 * a - 1)));
-            // b = 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1)));
-            // c = 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1)));
+            a = 0.5 * (1 + sin(M_PI / 2 * (2 * a - 1)));
+            b = 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1)));
+            c = 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1)));
+            // g = a + b + c;
             // cout << "";
-            // cout << "a: " << a << " b: " << b << " c: " << c << " i: " << i << " j: " << j << " index: " << index << endl;
-
-            points[index][0] = 0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
-            points[index][1] = 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
-            points[index][2] = 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
+            cout << "a: " << a << " b: " << b << " c: " << c << " i: " << i << " j: " << j << " index: " << index << endl;
+            // points[index][0] = a / g;
+            // points[index][1] = b / g;
+            // points[index][2] = c / g;
+            points[index][0] = a / (a + b + c);
+            points[index][1] = b / (a + b + c);
+            points[index][2] = c / (a + b + c);
+            // points[index][0] = 0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
+            // points[index][1] = 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
+            // points[index][2] = 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
         }
     }
 }

@@ -15,7 +15,7 @@
 
 using namespace std;
 
-void direct_sum(vector<double>& modify, vector<double>& curr_state, vector<vector<vector<int>>>& tri_points, int lev_target, int lev_source, int curr_target, int curr_source, double omega, double area) {
+void direct_sum(vector<double>& modify, vector<double>& curr_state, vector<vector<vector<int>>>& tri_points, int lev_target, int lev_source, int curr_target, int curr_source, double omega, vector<double>& area) {
     int particle_count_target, particle_count_source; // do direct summation for a pair of triangles
     int target_i, source_j;
     particle_count_target = tri_points[lev_target][curr_target].size();
@@ -24,23 +24,23 @@ void direct_sum(vector<double>& modify, vector<double>& curr_state, vector<vecto
     for (int i = 0; i < particle_count_target; i++) {
         target_i = tri_points[lev_target][curr_target][i];
         vector<double> pos_change {0, 0, 0};
-        particle_i = slice(curr_state, 4 * target_i, 1, 3);
+        particle_i = slice(curr_state, 5 * target_i, 1, 3);
         for (int j = 0; j < particle_count_source; j++) {
             source_j = tri_points[lev_source][curr_source][j];
             if (target_i != source_j) {
-                particle_j = slice(curr_state, 4 * source_j, 1, 3);
+                particle_j = slice(curr_state, 5 * source_j, 1, 3);
                 contribution = BVE_gfunc(particle_i, particle_j);
-                scalar_mult(contribution, curr_state[4 * source_j + 3] * area);
+                scalar_mult(contribution, curr_state[5 * source_j + 3] * area[source_j]);
                 vec_add(pos_change, contribution);
             }
         }
         for (int j = 0; j < 3; j++) {
-            modify[4 * target_i + j] += pos_change[j];
+            modify[5 * target_i + j] += pos_change[j];
         }
     }
 }
 
-void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector<double>>& vertices, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, vector<vector<vector<int>>>& tri_points, double t, double delta_t, double omega, double area, int points, int levels, double radius, double theta, int many_count, int degree, vector<double>& interp_matrix, vector<vector<double>>& interp_points, int* ipiv) {
+void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector<double>>& vertices, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, vector<vector<vector<int>>>& tri_points, double t, double delta_t, double omega, vector<double>& area, int points, int levels, double radius, double theta, int many_count, int degree, vector<double>& interp_matrix, vector<vector<double>>& interp_points, int* ipiv) {
     // vector<vector<double>> cluster_points {{1, 0}, {0.5, 0.5}, {0, 1}, {0, 0.5}, {0, 0}, {0.5, 0}};
     // int target_cluster_count = cluster_points.size();
     // vector<vector<double>> cluster_points {{1, 0}, {0.5, 0.5}, {0, 1}, {0, 0.5}, {0, 0}, {0.5, 0}};
@@ -162,11 +162,11 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
 
                         for (int j = 0; j < cluster_count; j++) {
                             point_index = tri_points[lev_source][curr_source][j];
-                            source_particle = slice(curr_state, 4 * point_index, 1, 3);
+                            source_particle = slice(curr_state, 5 * point_index, 1, 3);
                             bary_cord = barycoords(v1s, v2s, v3s, source_particle);
-                            interptargets[j] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], degree) * curr_state[4 * point_index + 3] * area;
-                            interptargets[j + cluster_count] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], degree) * curr_state[4 * point_index + 3] * area;
-                            interptargets[j + 2 * cluster_count] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], degree) * curr_state[4 * point_index + 3] * area;
+                            interptargets[j] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], degree) * curr_state[5 * point_index + 3] * area[point_index];
+                            interptargets[j + cluster_count] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], degree) * curr_state[5 * point_index + 3] * area[point_index];
+                            interptargets[j + 2 * cluster_count] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], degree) * curr_state[5 * point_index + 3] * area[point_index];
                         }
                     }
                 } else { // source has few particles, do C-P interaction
@@ -176,13 +176,13 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
 
                         for (int j = 0; j < particle_count_source; j++) {
                             point_index = tri_points[lev_source][curr_source][j];
-                            source_particle = slice(curr_state, 4 * point_index, 1, 3);
+                            source_particle = slice(curr_state, 5 * point_index, 1, 3);
                             func_val = BVE_gfunc(curr_points[i], source_particle);
                             // cout << func_val[0] << endl;
                             // cout << curr_points[0][0] << endl;
-                            interptargets[i] += func_val[0] * curr_state[4 * point_index + 3] * area;
-                            interptargets[i + cluster_count] += func_val[1] * curr_state[4 * point_index + 3] * area;
-                            interptargets[i + 2 * cluster_count] += func_val[2] * curr_state[4 * point_index + 3] * area;
+                            interptargets[i] += func_val[0] * curr_state[5 * point_index + 3] * area[point_index];
+                            interptargets[i + cluster_count] += func_val[1] * curr_state[5 * point_index + 3] * area[point_index];
+                            interptargets[i + 2 * cluster_count] += func_val[2] * curr_state[5 * point_index + 3] * area[point_index];
                         }
                     }
                 }
@@ -199,11 +199,11 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
 
                 for (int i = 0; i < particle_count_target; i++) {
                     point_index = tri_points[lev_target][curr_target][i];
-                    target_particle = slice(curr_state, 4 * point_index, 1, 3);
+                    target_particle = slice(curr_state, 5 * point_index, 1, 3);
                     bary_cord = barycoords(v1, v2, v3, target_particle);
-                    modify[4 * i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], degree);
-                    modify[4 * i + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], degree);
-                    modify[4 * i + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], degree);
+                    modify[5 * i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], degree);
+                    modify[5 * i + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], degree);
+                    modify[5 * i + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], degree);
                 }
             } else { // target has few points, do particle-X interaction
                 if (particle_count_source > many_count) { // source has lots of points, P-C interaction
@@ -216,7 +216,7 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                     v3s = vertices[iv3s];
                     for (int i = 0; i < particle_count_target; i++) {
                         point_index = tri_points[lev_target][curr_target][i];
-                        target_particle = slice(curr_state, 4 * point_index, 1, 3);
+                        target_particle = slice(curr_state, 5 * point_index, 1, 3);
                         for (int j = 0; j < cluster_count; j++) {
                             us = interp_points[j][0];
                             vs = interp_points[j][1];
@@ -244,11 +244,11 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                         }
                         for (int j = 0; j < particle_count_source; j++) {
                             point_index = tri_points[lev_source][curr_source][j];
-                            source_particle = slice(curr_state, 4 * point_index, 1, 3);
+                            source_particle = slice(curr_state, 5 * point_index, 1, 3);
                             bary_cord = barycoords(v1s, v2s, v3s, source_particle);
-                            modify[4 * i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], degree) * curr_state[4 * point_index + 3] * area;
-                            modify[4 * i + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], degree) * curr_state[4 * point_index + 3] * area;
-                            modify[4 * i + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], degree) * curr_state[4 * point_index + 3] * area;
+                            modify[5 * i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], degree) * curr_state[5 * point_index + 3] * area[point_index];
+                            modify[5 * i + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], degree) * curr_state[5 * point_index + 3] * area[point_index];
+                            modify[5 * i + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], degree) * curr_state[5 * point_index + 3] * area[point_index];
                         }
                     }
                 } else { // source has few points, P-P interaction
@@ -286,36 +286,39 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
         }
     }
     scalar_mult(modify, -1.0 / (4.0 * M_PI));
-    for (int i = 0; i < points; i++) modify[4 * i + 3] = -2 * omega * modify[4 * i + 2];
+    for (int i = 0; i < points; i++) modify[5 * i + 3] = -2 * omega * modify[5 * i + 2];
 }
 
-#define point_count 2562
+// #define point_count 2562
 
 int main() {
-
-    double delta_t = 0.01, end_t = 1;
-    double omega = 2 * M_PI;
-    int time_steps = end_t / delta_t;
-    double area = (4 * M_PI) / point_count;
+    double delta_t = 0.01, end_t = 1; // end_t = number of days
+    int point_count = 2562, tri_count = 5120, time_steps = end_t / delta_t, max_points = 1000000;
+    // double delta_t = 0.01, end_t = 1;
+    double omega = 2 * M_PI; // coriolis
+    // int time_steps = end_t / delta_t;
+    // double area = (4 * M_PI) / point_count;
     int icos_levels = 2;
     double radius = 1.0;
     double phi = (1 + sqrt(5)) / 2;
     double theta = 0.7;
     int many_count = 10;
-    int degree = 5;
+    int degree = 2;
     int cluster_count = (degree + 1) * (degree + 2) / 2;
 
-    vector<double> curr_state(4 * point_count); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity
-    vector<double> c_1(4 * point_count, 0);
-    vector<double> c_2(4 * point_count, 0);
-    vector<double> c_3(4 * point_count, 0);
-    vector<double> c_4(4 * point_count, 0);
-    vector<double> c12(4 * point_count, 0);
-    vector<double> c123(4 * point_count, 0);
-    vector<double> c1234(4 * point_count, 0);
-    vector<double> intermediate_1(4 * point_count);
-    vector<double> intermediate_2(4 * point_count);
-    vector<double> intermediate_3(4 * point_count);
+    vector<double> curr_state(5 * point_count); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity
+    vector<double> c_1(5 * point_count, 0);
+    vector<double> c_2(5 * point_count, 0);
+    vector<double> c_3(5 * point_count, 0);
+    vector<double> c_4(5 * point_count, 0);
+    vector<double> c12(5 * point_count, 0);
+    vector<double> c123(5 * point_count, 0);
+    vector<double> c1234(5 * point_count, 0);
+    vector<double> intermediate_1(5 * point_count);
+    vector<double> intermediate_2(5 * point_count);
+    vector<double> intermediate_3(5 * point_count);
+    vector<double> area(point_count, 0);
+    vector<int> state;
 
     vector<vector<double>> vertices; // list of mesh vertices
     vector<vector<vector<double>>> triangle_info; // contains triangle centers, radii
@@ -323,37 +326,93 @@ int main() {
     vector<vector<vector<int>>> tri_points (icos_levels); // points in each triangle
     vector<vector<int>> point_locs (icos_levels, vector<int> (point_count, 0)); // triangle each point is in
 
+    vector<vector<int>> triangles(tri_count, vector<int> (3)); // triangles[i] is a length 3 int vector containing the indices of the points of the vertices
+    vector<vector<int>> vert_tris(point_count); // vert_tris[i] is the int vector containing the indices of the triangles adjacent to point i
+    vector<vector<int>> parent_verts(max_points, vector<int> (2, 0)); //
+
     vector<vector<double>> cluster_points (cluster_count, vector<double> (3, 0)); // interpolation points
     vector<double> interp_matrix (cluster_count * cluster_count, 0); // interpolation matrix
 
     // cout << "Here" << endl;
-
-
-    fstream file("../points.csv");
-    // fstream file("./points.csv");
+    ifstream file1("../2562points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../2562tris.csv");
+    ifstream file3("../2562vert_tris.csv");
+    ifstream file4("../2562vert_tri_count.csv");
     string line, word;
+    int tri_counts;
 
-    ofstream write_out;
-    write_out.open("fast_output.csv", ofstream::out | ofstream::trunc);
+    ofstream write_out1("direct_output.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
+    ofstream write_out2("direct_point_counts.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
+    // write_out1.open("direct_output.csv", ofstream::out | ofstream::trunc);
 
     for (int i = 0; i < point_count; i++) {
-        getline(file, line);
-        stringstream str(line);
-        for (int j = 0; j < 4; j++) {
-            getline(str, word, ',');
-            curr_state[4 * i + j] = stod(word);
+        getline(file1, line);
+        stringstream str1(line);
+        for (int j = 0; j < 4; j++) { // read in initial condition of each point
+            getline(str1, word, ',');
+            curr_state[5 * i + j] = stod(word);
+        }
+
+        getline(file4, line);
+        stringstream str4(line);
+        getline(str4, word, ',');
+        tri_counts = stod(word); // number of triangles each point borders
+
+        vert_tris[i] = vector<int> (tri_counts);
+        getline(file3, line);
+        stringstream str3(line);
+        for (int j = 0; j < tri_counts; j++) { // reads in each points adjacent triangles
+            getline(str3, word, ',');
+            vert_tris[i][j] = stod(word);
         }
     }
 
-    // cout << "Here 2" << endl;
+    for (int i = 0; i < tri_count; i++) { // reads in triangle vertex information
+        getline(file2, line);
+        stringstream str2(line);
+        for (int j = 0; j < 3; j++) {
+            getline(str2, word, ',');
+            triangles[i][j] = stod(word);
+        }
+    }
 
-    chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+    file1.close(); // close all the files we read from
+    file2.close();
+    file3.close();
+    file4.close();
+
+    vector<double> position;
+    double lat;
+    for (int i = 0; i < point_count; i++) {
+        position = slice(curr_state, 5 * i, 1, 3);
+        lat = lat_lon(position)[0];
+        curr_state[5 * i + 4] = lat; // initial latitude as passive tracer
+    }
+
+    int iv1, iv2, iv3;
+    double curr_area;
+    vector<double> v1, v2, v3;
+    for (int i = 0; i < tri_count; i++) {
+        // cout << i << endl;
+        iv1 = triangles[i][0];
+        iv2 = triangles[i][1];
+        iv3 = triangles[i][2];
+        // cout << iv1 << " " << iv2 << " " << iv3 << endl;
+        v1 = slice(curr_state, 5 * iv1, 1, 3);
+        v2 = slice(curr_state, 5 * iv2, 1, 3);
+        v3 = slice(curr_state, 5 * iv3, 1, 3);
+        curr_area = sphere_tri_area(v1, v2, v3, 1);
+        area[iv1] += curr_area / 3.0;
+        area[iv2] += curr_area / 3.0;
+        area[iv3] += curr_area / 3.0;
+    }
+
 
     icos_init(vertices, triangle_info, triangle_verts, radius, icos_levels - 1);
     fekete_init(cluster_points, degree);
     interp_mat_init(interp_matrix, cluster_points, degree, cluster_count);
     int ipiv[cluster_count];
-    int info, dim = cluster_count;
+    int info = 0, dim = cluster_count;
     cout << cluster_points[0][0] << endl;
     // char trans = 'N';
     dgetrf_(&dim, &dim, &*interp_matrix.begin(), &dim, ipiv, &info); // prefactor Ai matrix
@@ -368,12 +427,14 @@ int main() {
 
     // cout << "Here 3" << endl;
 
+    chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+
 
     for (int t = 0; t < 1; t++) { // time iterate with RK4
         double curr_time = t * delta_t;
         points_assign(triangle_verts, vertices, curr_state, tri_points, point_locs, icos_levels, point_count);
         // cout << "Here 4" << endl;
-        cout << c_1[0] << endl;
+        // cout << c_1[0] << endl;
         BVE_ffunc(c_1, curr_state, vertices, triangle_info, triangle_verts, tri_points, curr_time, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, degree, interp_matrix, cluster_points, ipiv);
         // intermediate_1 = c_1;
         // scalar_mult(intermediate_1, delta_t / 2);
@@ -397,21 +458,26 @@ int main() {
         // vec_add(c1234, c_3);
         // vec_add(c1234, c_4);
         // scalar_mult(c1234, delta_t / 6);
+        // vec_add(c1234, curr_state); // c1234 is new state
+        // regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega); // regrids points so that they are regular, modifies curr_state
+        // state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
         // vec_add(curr_state, c1234);
-        cout << c_1[0] << endl;
-        for (int i = 0; i < point_count; i++) {
-            // vector<double> projected = slice(curr_state, 4 * i, 1, 3);
-            // project_to_sphere(projected, 1);
-            // for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
-            // write_out << curr_state[4 * i] << "," << curr_state[4 * i + 1] << "," << curr_state[4 * i + 2] << "," << curr_state[4 * i + 3] << "\n"; // write position
-            write_out << c_1[4 * i] << "," << c_1[4 * i + 1] << "," << c_1[4 * i + 2] << "," << c_1[4 * i + 3] << "\n"; // write position
-        }
-        cout << t << endl;
+        // cout << c_1[0] << endl;
+        // for (int i = 0; i < point_count; i++) {
+        //     // vector<double> projected = slice(curr_state, 4 * i, 1, 3);
+        //     // project_to_sphere(projected, 1);
+        //     // for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
+        //     // write_out << c_1[5 * i] << "," << c_1[5 * i + 1] << "," << c_1[5 * i + 2] << "," << c_1[5 * i + 3] << "\n"; // write position
+        //     write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "," << area[i] << "\n"; // write current state
+        // }
+        // write_out2 << point_count << "\n";
+        // cout << t << endl;
     }
 
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
     cout << "time taken: " << chrono::duration_cast<chrono::microseconds>(end - begin).count() << " microseconds" << endl;
 
-    write_out.close();
+    write_out1.close();
+    write_out2.close();
     return 0;
 }

@@ -2,7 +2,7 @@
 #include <cmath>
 #include <array>
 #include <vector>
-#include <Accelerate/Accelerate.h>
+// #include <Accelerate/Accelerate.h>
 #include <fstream>
 #include <queue>
 
@@ -280,14 +280,15 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
     for (int i = 0; i < points; i++) modify[4 * i + 3] = -2 * omega * modify[4 * i + 2];
 }
 
-#define point_count 2562
+// #define point_count 2562
 
 int main() {
-
-    double delta_t = 0.01, end_t = 1;
-    double omega = 2 * M_PI;
-    int time_steps = end_t / delta_t;
-    double area = (4 * M_PI) / point_count;
+    double delta_t = 0.01, end_t = 1; // end_t = number of days
+    int point_count = 2562, tri_count = 5120, time_steps = end_t / delta_t, max_points = 1000000;
+    // double delta_t = 0.01, end_t = 1;
+    double omega = 2 * M_PI; // coriolis
+    // int time_steps = end_t / delta_t;
+    // double area = (4 * M_PI) / point_cou nt;
     int icos_levels = 2;
     double radius = 1.0;
     double phi = (1 + sqrt(5)) / 2;
