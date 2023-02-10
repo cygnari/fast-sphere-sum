@@ -9,3 +9,5 @@
 *.gif
 *.ipynb_checkpoints/
 *.png
+*.out
+*.txt
