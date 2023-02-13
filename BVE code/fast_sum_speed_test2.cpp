@@ -293,12 +293,12 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
 
 int main() {
     double delta_t = 0.01, end_t = 1; // end_t = number of days
-    int point_count = 10242, tri_count = 20480, time_steps = end_t / delta_t, max_points = 1000000;
+    int point_count = 40962, tri_count = 81920, time_steps = end_t / delta_t, max_points = 1000000;
     // double delta_t = 0.01, end_t = 1;
     double omega = 2 * M_PI; // coriolis
     // int time_steps = end_t / delta_t;
     // double area = (4 * M_PI) / point_count;
-    int icos_levels = 3;
+    int icos_levels = 4;
     double radius = 1.0;
     double phi = (1 + sqrt(5)) / 2;
     double theta = 0.7;
@@ -334,10 +334,10 @@ int main() {
     vector<double> interp_matrix (cluster_count * cluster_count, 0); // interpolation matrix
 
     // cout << "Here" << endl;
-    ifstream file1("../10242points_rh4.csv"); // ifstream = input file stream
-    ifstream file2("../10242tris.csv");
-    ifstream file3("../10242vert_tris.csv");
-    ifstream file4("../10242vert_tri_count.csv");
+    ifstream file1("../40962points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../40962tris.csv");
+    ifstream file3("../40962vert_tris.csv");
+    ifstream file4("../40962vert_tri_count.csv");
     string line, word;
     int tri_counts;
 
