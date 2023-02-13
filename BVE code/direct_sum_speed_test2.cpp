@@ -39,7 +39,7 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, double t, dou
 
 int main() {
     double delta_t = 0.01, end_t = 1; // end_t = number of days
-    int point_count = 2562, tri_count = 5120, time_steps = end_t / delta_t, max_points = 1000000;
+    int point_count = 10242, tri_count = 20480, time_steps = end_t / delta_t, max_points = 1000000;
     double omega = 2 * M_PI; // coriolis factor
 
     vector<double> curr_state(5 * point_count); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity, 4 is passive tracer
