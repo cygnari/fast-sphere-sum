@@ -419,7 +419,7 @@ double interp_eval(vector<double>& alphas, double s, double t, int degree) { // 
 }
 
 // #pragma clang attribute optnone
-void fekete_init(vector<vector<double>>& points, int degree) __attribute__((optnone)) { // initializes fekete matrix
+void __attribute__((optnone)) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix
     double delta_x = 1.0 / degree;
     int index;
     double a, b, c, d;
