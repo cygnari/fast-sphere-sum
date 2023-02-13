@@ -7,7 +7,7 @@
 #include <cmath>
 #include <array>
 #include <vector>
-// #include <Accelerate/Accelerate.h>
+#include <Accelerate/Accelerate.h>
 #include <cassert>
 #include <algorithm>
 
@@ -418,10 +418,11 @@ double interp_eval(vector<double>& alphas, double s, double t, int degree) { // 
     return accum;
 }
 
-void fekete_init(vector<vector<double>>& points, int degree) { // initializes fekete matrix
+// #pragma clang attribute optnone
+void fekete_init(vector<vector<double>>& points, int degree) __attribute__((optnone)) { // initializes fekete matrix
     double delta_x = 1.0 / degree;
     int index;
-    double a, b, c, d, e, f, g;
+    double a, b, c, d;
     for (int i = 0; i < degree + 1; i++) {
         a = 1 - i * delta_x;
         for (int j = 0; j < i + 1; j++) {
@@ -431,18 +432,9 @@ void fekete_init(vector<vector<double>>& points, int degree) { // initializes fe
             a = 0.5 * (1 + sin(M_PI / 2 * (2 * a - 1)));
             b = 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1)));
             c = 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1)));
-            // g = a + b + c;
-            // cout << "";
-            cout << "a: " << a << " b: " << b << " c: " << c << " i: " << i << " j: " << j << " index: " << index << endl;
-            // points[index][0] = a / g;
-            // points[index][1] = b / g;
-            // points[index][2] = c / g;
             points[index][0] = a / (a + b + c);
             points[index][1] = b / (a + b + c);
             points[index][2] = c / (a + b + c);
-            // points[index][0] = 0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
-            // points[index][1] = 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
-            // points[index][2] = 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))) / (0.5 * (1 + sin(M_PI / 2 * (2 * a - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * b - 1))) + 0.5 * (1 + sin(M_PI / 2 * (2 * c - 1))));
         }
     }
 }
@@ -482,7 +474,7 @@ void tri_interp(int iv1, int iv2, int iv3, vector<double>& v1, vector<double>& v
 void regrid_points(vector<double>& curr_state, vector<double>& target_points, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, int point_count, int tri_count, double omega) { // remesh back to original particle locations
     vector<double> curr_target, curr_pos, v1, v2, v3; // need to fix vorticity remeshing
     vector<int> poss_tris;
-    double curr_vor;
+    // double curr_vor;
     int test_count, iv1, iv2, iv3;
     int success = 0, failure = 0, bad = 0;
     bool found;
