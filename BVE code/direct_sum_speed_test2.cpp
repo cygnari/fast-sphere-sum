@@ -39,7 +39,7 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, double t, dou
 
 int main() {
     double delta_t = 0.01, end_t = 1; // end_t = number of days
-    int point_count = 40962, tri_count = 81920, time_steps = end_t / delta_t, max_points = 1000000;
+    int point_count = 163842, tri_count = 327680, time_steps = end_t / delta_t, max_points = 1000000;
     double omega = 2 * M_PI; // coriolis factor
 
     vector<double> curr_state(5 * point_count); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity, 4 is passive tracer
@@ -59,10 +59,10 @@ int main() {
     vector<vector<int>> vert_tris(point_count); // vert_tris[i] is the int vector containing the indices of the triangles adjacent to point i
     vector<vector<int>> parent_verts(max_points, vector<int> (2, 0)); //
 
-    ifstream file1("../40962points_rh4.csv"); // ifstream = input file stream
-    ifstream file2("../40962tris.csv");
-    ifstream file3("../40962vert_tris.csv");
-    ifstream file4("../40962vert_tri_count.csv");
+    ifstream file1("../163842points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../163842tris.csv");
+    ifstream file3("../163842vert_tris.csv");
+    ifstream file4("../163842vert_tri_count.csv");
     string line, word;
     int tri_counts;
 
