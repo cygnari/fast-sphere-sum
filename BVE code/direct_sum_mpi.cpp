@@ -15,18 +15,18 @@
 
 using namespace std;
 
-void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, double t, double delta_t, double omega, double area, int total_points, int lb, int ub) {
+void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, double t, double delta_t, double omega, vector<double>& area, int total_points, int lb, int ub) {
 
     for (int i = lb; i < ub; i++) {
         vector<double> pos_change (3, 0);
-        vector<double> particle_i = slice(curr_state, 4 * i, 1, 3);
+        vector<double> particle_i = slice(curr_state, 5 * i, 1, 3);
         // cout << "particle i " << particle_i[0] << " " << particle_i[1] << " " << particle_i[2] << endl;
         for (int j = 0; j < total_points; j++) {
             // int global_id = own_particles[i];
             if (i != j) {
                 // cout << own_particles[i] << " " << j << endl;
                 // int local_id_j = local_ids[j];
-                vector<double> particle_j = slice(curr_state, 4 * j, 1, 3);
+                vector<double> particle_j = slice(curr_state, 5 * j, 1, 3);
                 // if (in_curr_thread[j]) {
                 //     particle_j = slice(curr_state, 4 * local_id_j, 1, 4);
                 // } else {
@@ -37,15 +37,15 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, double t, dou
                 // vector<double> pos_j = slice(particle_j, 0, 1, 3);
 
                 vector<double> contribution = BVE_gfunc(particle_i, particle_j);
-                scalar_mult(contribution, curr_state[4 * j + 3] * area);
+                scalar_mult(contribution, curr_state[5 * j + 3] * area[j]);
                 // cout << "contribution" << endl;
                 vec_add(pos_change, contribution);
                 // for (int k = 0; k < 3; k++) cout << contribution[k] << endl;
             }
         }
         scalar_mult(pos_change, -1.0 / (4.0 * M_PI));
-        for (int j = 0; j < 3; j++) modify[4 * i + j] = pos_change[j];
-        modify[4 * i + 3] = -2 * omega * pos_change[2];
+        for (int j = 0; j < 3; j++) modify[5 * i + j] = pos_change[j];
+        modify[5 * i + 3] = -2 * omega * pos_change[2];
     }
     // MPI_Barrier(MPI_COMM_WORLD);
     // MPI_Win_fence(0, window);
@@ -59,10 +59,11 @@ void sync_buffer(vector<double>& buffer, int ID, int P, vector<int>& lb, vector<
     // cout << buffer.size() << endl;
     // cout << "buff 8 " << buffer[7] << endl;
     for (int i = 0; i < P; i++) {
+        cout << i << endl;
 
         if (i != ID) {
             // cout << "i: " << i << " ID: " << ID << " P: " << P << " lb: " << lb[i] << " num: " << counts[i] << endl;
-            MPI_Get(&buffer[4 * lb[i]], 4 * counts[i], MPI_DOUBLE, i, 4 * lb[i], 4 * counts[i], MPI_DOUBLE, *win);
+            MPI_Get(&buffer[5 * lb[i]], 5 * counts[i], MPI_DOUBLE, i, 5 * lb[i], 5 * counts[i], MPI_DOUBLE, *win);
             // MPI_Get(&buffer[0], 4 * counts[i], MPI_DOUBLE, i, 0, 4 * counts[i], MPI_DOUBLE, *win);
             // cout << "id: " << ID << " success" << endl;
         }
@@ -89,7 +90,7 @@ int processor_particle_count(int id, int total_P, int points) {
     }
 }
 
-#define point_count 163842
+// #define point_count 163842
 
 int main(int argc, char** argv) {
 
@@ -104,6 +105,9 @@ int main(int argc, char** argv) {
     MPI_Win win_inter2;
     MPI_Win win_inter3;
 
+    double delta_t = 0.01, end_t = 1; // end_t = number of days
+    int point_count = 2562, tri_count = 5120, time_steps = end_t / delta_t, max_points = 1000000;
+
     chrono::steady_clock::time_point begin_time;
 
     int points_per_rank = point_count / P;
@@ -117,20 +121,24 @@ int main(int argc, char** argv) {
     cout << "P: " << P << " ID: " << ID << " points_per_rank: " << points_per_rank << " own_points: " << own_points << endl;
     // cout << "P: " << P << " ID: " << ID << endl;
 
-    double delta_t = 0.01, end_t = 1;
-    double omega = 2 * M_PI;
-    int time_steps = end_t / delta_t;
-    double area = (4 * M_PI) / point_count;
 
-    vector<double> curr_state(4 * point_count, 0); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity
-    vector<double> c_1(4 * point_count, 0);
-    vector<double> c_2(4 * point_count, 0);
-    vector<double> c_3(4 * point_count, 0);
-    vector<double> c_4(4 * point_count, 0);
-    vector<double> c1234(4 * point_count, 0);
-    vector<double> intermediate_1(4 * point_count, 0);
-    vector<double> intermediate_2(4 * point_count, 0);
-    vector<double> intermediate_3(4 * point_count, 0);
+    // int point_count = 40962, tri_count = 81920, time_steps = end_t / delta_t, max_points = 1000000;
+    // double delta_t = 0.01, end_t = 1;
+    double omega = 2 * M_PI;
+    // int time_steps = end_t / delta_t;
+    // double area = (4 * M_PI) / point_count;
+
+    vector<double> curr_state(5 * point_count, 0); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity
+    vector<double> c_1(5 * point_count, 0);
+    vector<double> c_2(5 * point_count, 0);
+    vector<double> c_3(5 * point_count, 0);
+    vector<double> c_4(5 * point_count, 0);
+    vector<double> c1234(5 * point_count, 0);
+    vector<double> intermediate_1(5 * point_count, 0);
+    vector<double> intermediate_2(5 * point_count, 0);
+    vector<double> intermediate_3(5 * point_count, 0);
+    vector<double> area(point_count, 0);
+    vector<int> state;
 
     vector<double> particle_thread(point_count, 0); // particle_thread[i] is the processor where particle i is located
     // vector<bool> in_curr_thread(point_count, false); // true if particle i is in the current thread
@@ -140,21 +148,31 @@ int main(int argc, char** argv) {
     vector<int> upper_bounds (P, 0); // upper bound of each processor particles
     vector<int> point_counts (P, 0); // points in each processor
 
-    MPI_Win_create(&curr_state[0], 4 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_curr_state);
-    MPI_Win_create(&intermediate_1[0], 4 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter1);
-    MPI_Win_create(&intermediate_2[0], 4 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter2);
-    MPI_Win_create(&intermediate_3[0], 4 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter3);
+    MPI_Win_create(&curr_state[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_curr_state);
+    MPI_Win_create(&intermediate_1[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter1);
+    MPI_Win_create(&intermediate_2[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter2);
+    MPI_Win_create(&intermediate_3[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter3);
 
     MPI_Win_fence(0, win_curr_state);
     MPI_File fh;
 
     // fstream file("../points.csv");
-    fstream file("./points.csv");
+    // fstream file("./points.csv");
+    // string line, word;
+    ifstream file1("../2562points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../2562tris.csv");
+    ifstream file3("../2562vert_tris.csv");
+    ifstream file4("../2562vert_tri_count.csv");
     string line, word;
+    int tri_counts;
 
-    ofstream write_out;
-    write_out.open("./direct_output_mpi.out", ofstream::out | ofstream::trunc);
-    write_out.close();
+    // ofstream write_out;
+    ofstream write_out1("direct_output_mpi.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
+    ofstream write_out2("direct_point_counts_mpi.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
+
+    // write_out1.open("./direct_output_mpi.out", ofstream::out | ofstream::trunc);
+    write_out1.close();
+    write_out2.close();
 
     MPI_Barrier(MPI_COMM_WORLD);
     // cout << "here" << endl;
@@ -191,22 +209,22 @@ int main(int argc, char** argv) {
 
 
     if (ID == 0) { // reads in the particles
-        vector<double> particle (4, 0);
+        vector<double> particle (5, 0);
         for (int i = 0; i < point_count; i++) {
-            getline(file, line);
+            getline(file1, line);
             stringstream str(line);
             target_loc = particle_thread[i];
             local_id = i - target_loc * points_per_rank;
             target_points = processor_particle_count(target_loc, P, point_count);
-            for (int j = 0; j < 4; j++) {
+            for (int j = 0; j < 5; j++) {
                 getline(str, word, ',');
                 particle[j] = stod(word);
             }
             if (target_loc == 0) {
-                for (int j = 0; j < 4; j++) curr_state[4 * local_id + j] = particle[j];
+                for (int j = 0; j < 5; j++) curr_state[5 * local_id + j] = particle[j];
             } else {
-                // cout << "here" << endl;
-                MPI_Put(&particle[0], 4, MPI_DOUBLE, target_loc, 4 * local_id, 4, MPI_DOUBLE, win_curr_state);
+                // cout << "here " << i << endl;
+                MPI_Put(&particle[0], 5, MPI_DOUBLE, target_loc, 5 * local_id, 5, MPI_DOUBLE, win_curr_state);
             }
         }
         begin_time = chrono::steady_clock::now();
@@ -246,51 +264,52 @@ int main(int argc, char** argv) {
 
 
     //
+    cout << "here" << endl;
     for (int t = 0; t < 1; t++) { // time iterate with RK4
         double curr_time = t * delta_t;
         // MPI_Win_fence(0, win_curr_state);
         sync_buffer(curr_state, ID, P, lower_bounds, point_counts, &win_curr_state);
         MPI_Barrier(MPI_COMM_WORLD);
         BVE_ffunc(c_1, curr_state, curr_time, delta_t, omega, area, point_count, lower_bounds[ID], upper_bounds[ID]);
-        intermediate_1 = c_1;
-        scalar_mult(intermediate_1, delta_t / 2);
-        vec_add(intermediate_1, curr_state);
-        MPI_Barrier(MPI_COMM_WORLD);
-        sync_buffer(intermediate_1, ID, P, lower_bounds, point_counts, &win_inter1);
-        MPI_Barrier(MPI_COMM_WORLD);
-        BVE_ffunc(c_2, intermediate_1, curr_time, delta_t, omega, area, point_count, lower_bounds[ID], upper_bounds[ID]);
-        intermediate_2 = c_2;
-        scalar_mult(intermediate_2, delta_t / 2);
-        vec_add(intermediate_2, curr_state);
-        MPI_Barrier(MPI_COMM_WORLD);
-        sync_buffer(intermediate_2, ID, P, lower_bounds, point_counts, &win_inter2);
-        MPI_Barrier(MPI_COMM_WORLD);
-        BVE_ffunc(c_3, intermediate_2, curr_time, delta_t, omega, area, point_count, lower_bounds[ID], upper_bounds[ID]);
-        intermediate_3 = c_3;
-        scalar_mult(intermediate_3, delta_t);
-        vec_add(intermediate_3, curr_state);
-        MPI_Barrier(MPI_COMM_WORLD);
-        sync_buffer(intermediate_3, ID, P, lower_bounds, point_counts, &win_inter3);
-        MPI_Barrier(MPI_COMM_WORLD);
-        BVE_ffunc(c_4, intermediate_3, curr_time, delta_t, omega, area, point_count, lower_bounds[ID], upper_bounds[ID]);
-        c1234 = c_1;
-        scalar_mult(c_2, 2);
-        vec_add(c1234, c_2);
-        scalar_mult(c_3, 2);
-        vec_add(c1234, c_3);
-        vec_add(c1234, c_4);
-        scalar_mult(c1234, delta_t / 6);
-        vec_add(curr_state, c1234);
-        for (int i = lower_bounds[ID]; i < upper_bounds[ID]; i++) {
-            vector<double> projected = slice(curr_state, 4 * i, 1, 3);
-            // projected = project_to_sphere(projected, 1);
-            project_to_sphere(projected, 1);
-            for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
+        // intermediate_1 = c_1;
+        // scalar_mult(intermediate_1, delta_t / 2);
+        // vec_add(intermediate_1, curr_state);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // sync_buffer(intermediate_1, ID, P, lower_bounds, point_counts, &win_inter1);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // BVE_ffunc(c_2, intermediate_1, curr_time, delta_t, omega, area, point_count, lower_bounds[ID], upper_bounds[ID]);
+        // intermediate_2 = c_2;
+        // scalar_mult(intermediate_2, delta_t / 2);
+        // vec_add(intermediate_2, curr_state);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // sync_buffer(intermediate_2, ID, P, lower_bounds, point_counts, &win_inter2);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // BVE_ffunc(c_3, intermediate_2, curr_time, delta_t, omega, area, point_count, lower_bounds[ID], upper_bounds[ID]);
+        // intermediate_3 = c_3;
+        // scalar_mult(intermediate_3, delta_t);
+        // vec_add(intermediate_3, curr_state);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // sync_buffer(intermediate_3, ID, P, lower_bounds, point_counts, &win_inter3);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // BVE_ffunc(c_4, intermediate_3, curr_time, delta_t, omega, area, point_count, lower_bounds[ID], upper_bounds[ID]);
+        // c1234 = c_1;
+        // scalar_mult(c_2, 2);
+        // vec_add(c1234, c_2);
+        // scalar_mult(c_3, 2);
+        // vec_add(c1234, c_3);
+        // vec_add(c1234, c_4);
+        // scalar_mult(c1234, delta_t / 6);
+        // vec_add(curr_state, c1234);
+        // for (int i = lower_bounds[ID]; i < upper_bounds[ID]; i++) {
+        //     vector<double> projected = slice(curr_state, 4 * i, 1, 3);
+        //     // projected = project_to_sphere(projected, 1);
+        //     project_to_sphere(projected, 1);
+        //     for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
         //     // write_out << curr_state[4 * i] << "," << curr_state[4 * i + 1] << "," << curr_state[4 * i + 2] << "," << curr_state[4 * i + 3] << "\n"; // write position
         //     // int offset = ((t + 1) * point_count + own_particles[i]) * 4 * sizeof(double);
         //     // cout << "offset: " << offset << endl;
         //     // MPI_File_write_at_all(fh, offset, &curr_state[4*i], 4, MPI_DOUBLE, &status);
-        }
+        // }
         MPI_Barrier(MPI_COMM_WORLD);
         // for (int i = 0; i < point_count; i++) { // write out the initial state
         //     if (in_curr_thread[i]) {
