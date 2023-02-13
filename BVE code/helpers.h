@@ -574,8 +574,8 @@ void replace(vector<int>& vals, int find, int replacement) { // replace find in 
 }
 
 vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, vector<double>& areas, vector<vector<int>>& parent_verts, int tri_count, int point_count, int max_points) { // adaptive mesh refinement
-    double circulation_tol = 0.0025; // for 2562 particles, reduce for more starting particles
-    double vorticity_tol = 0.2; // for 2562 particles, reduce for more starting particles
+    double circulation_tol = 0.0025 / 4.0; // for 2562 particles, reduce for more starting particles
+    double vorticity_tol = 0.2 / 4.0; // for 2562 particles, reduce for more starting particles
     int iv1, iv2, iv3, iv12, iv23, iv31,  itriv1v12v31, itriv2v12v23, itriv3v31v23, itriv12v23v31, old_tri_count;
     double vor1, vor2, vor3, max_val, min_val, vor1n, vor2n, vor3n, circulation, tri_area;
     vector<double> v1, v2, v3, v12, v23, v31;
