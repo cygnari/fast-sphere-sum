@@ -166,9 +166,9 @@ int main() {
         vec_add(c1234, c_3);
         vec_add(c1234, c_4);
         scalar_mult(c1234, delta_t / 6);
-        // vec_add(c1234, curr_state); // c1234 is new state
-        vec_add(curr_state, c1234);
-        // regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega); // regrids points so that they are regular, modifies curr_state
+        vec_add(c1234, curr_state); // c1234 is new state
+        // vec_add(curr_state, c1234);
+        regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega); // regrids points so that they are regular, modifies curr_state
         // state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
         // point_count = state[1];
         // tri_count = state[0];
