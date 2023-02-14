@@ -8,7 +8,7 @@
 #SBATCH --ntasks-per-node=36
 #SBATCH --mem-per-cpu=1g
 #SBATCH --time=00:05:00
-#SBATCH --account=eecs587f22_class
+#SBATCH --account=krasny0
 #SBATCH --partition=standard
 
 
