@@ -25,4 +25,4 @@
 # --bind-to core sets up mpi environment and specifies which hardware to bind MPI processes to
 # you don't need to mess with this
 
-mpirun -np 2 --bind-to core:overload-allowed ./fast_sum_mpi  > fast_sum_mpi_2.txt
+mpirun -np 4 --bind-to core:overload-allowed ./fast_sum_mpi  > fast_sum_mpi_4.txt
