@@ -311,7 +311,7 @@ int main(int argc, char** argv) {
     double omega = 2 * M_PI;
     int time_steps = end_t / delta_t;
     // double area = (4 * M_PI) / point_count;
-    int icos_levels = 5;
+    int icos_levels = 3;
     double radius = 1.0;
     double phi = (1 + sqrt(5)) / 2;
     double theta = 0.7;
