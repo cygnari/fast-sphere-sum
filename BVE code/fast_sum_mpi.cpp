@@ -17,7 +17,7 @@
 
 using namespace std;
 
-void direct_sum(vector<double>& modify, vector<double>& curr_state, vector<vector<vector<int>>>& tri_points, int lev_target, int lev_source, int curr_target, int curr_source, double omega, double area) {
+void direct_sum(vector<double>& modify, vector<double>& curr_state, vector<vector<vector<int>>>& tri_points, int lev_target, int lev_source, int curr_target, int curr_source, double omega, vector<double>& area) {
     int particle_count_target, particle_count_source; // do direct summation for a pair of triangles
     int target_i, source_j;
     particle_count_target = tri_points[lev_target][curr_target].size();
@@ -26,23 +26,23 @@ void direct_sum(vector<double>& modify, vector<double>& curr_state, vector<vecto
     for (int i = 0; i < particle_count_target; i++) {
         target_i = tri_points[lev_target][curr_target][i];
         vector<double> pos_change {0, 0, 0};
-        particle_i = slice(curr_state, 4 * target_i, 1, 3);
+        particle_i = slice(curr_state, 5 * target_i, 1, 3);
         for (int j = 0; j < particle_count_source; j++) {
             source_j = tri_points[lev_source][curr_source][j];
             if (target_i != source_j) {
-                particle_j = slice(curr_state, 4 * source_j, 1, 3);
+                particle_j = slice(curr_state, 5 * source_j, 1, 3);
                 contribution = BVE_gfunc(particle_i, particle_j);
-                scalar_mult(contribution, curr_state[4 * source_j + 3] * area);
+                scalar_mult(contribution, curr_state[5 * source_j + 3] * area[source_j]);
                 vec_add(pos_change, contribution);
             }
         }
         for (int j = 0; j < 3; j++) {
-            modify[4 * target_i + j] += pos_change[j];
+            modify[5 * target_i + j] += pos_change[j];
         }
     }
 }
 
-void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector<double>>& vertices, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, vector<vector<vector<int>>>& tri_points, double t, double delta_t, double omega, double area, int points, int levels, double radius, double theta, int many_count, int tri_lb, int tri_ub) {
+void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector<double>>& vertices, vector<vector<vector<double>>>& tri_info, vector<vector<vector<int>>>& tri_verts, vector<vector<vector<int>>>& tri_points, double t, double delta_t, double omega, vector<double>& area, int points, int levels, double radius, double theta, int many_count, int tri_lb, int tri_ub) {
     vector<vector<double>> target_points {{1, 0}, {0.5, 0.5}, {0, 1}, {0, 0.5}, {0, 0}, {0.5, 0}};
     int target_cluster_count = target_points.size();
     vector<vector<double>> source_points {{1, 0}, {0.5, 0.5}, {0, 1}, {0, 0.5}, {0, 0}, {0.5, 0}};
@@ -145,11 +145,11 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
 
                         for (int j = 0; j < 6; j++) {
                             point_index = tri_points[lev_source][curr_source][j];
-                            source_particle = slice(curr_state, 4 * point_index, 1, 3);
+                            source_particle = slice(curr_state, 5 * point_index, 1, 3);
                             bary_cord = barycoords(v1s, v2s, v3s, source_particle);
-                            interptargets[j] += interp_eval(alphas_x, bary_cord[0], bary_cord[1]) * curr_state[4 * point_index + 3] * area;
-                            interptargets[j+6] += interp_eval(alphas_y, bary_cord[0], bary_cord[1]) * curr_state[4 * point_index + 3] * area;
-                            interptargets[j+12] += interp_eval(alphas_z, bary_cord[0], bary_cord[1]) * curr_state[4 * point_index + 3] * area;
+                            interptargets[j] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], 2) * curr_state[5 * point_index + 3] * area[point_index];
+                            interptargets[j+6] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], 2) * curr_state[5 * point_index + 3] * area[point_index];
+                            interptargets[j+12] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], 2) * curr_state[5 * point_index + 3] * area[point_index];
                         }
                     }
                 } else { // source has few particles, do C-P interaction
@@ -158,11 +158,11 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
 
                         for (int j = 0; j < particle_count_source; j++) {
                             point_index = tri_points[lev_source][curr_source][j];
-                            source_particle = slice(curr_state, 4 * point_index, 1, 3);
+                            source_particle = slice(curr_state, 5 * point_index, 1, 3);
                             func_val = BVE_gfunc(curr_points[i], source_particle);
-                            interptargets[i] += func_val[0] * curr_state[4 * point_index + 3] * area;
-                            interptargets[i+6] += func_val[1] * curr_state[4 * point_index + 3] * area;
-                            interptargets[i+12] += func_val[2] * curr_state[4 * point_index + 3] * area;
+                            interptargets[i] += func_val[0] * curr_state[5 * point_index + 3] * area[point_index];
+                            interptargets[i+6] += func_val[1] * curr_state[5 * point_index + 3] * area[point_index];
+                            interptargets[i+12] += func_val[2] * curr_state[5 * point_index + 3] * area[point_index];
                         }
                     }
                 }
@@ -176,11 +176,11 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
 
                 for (int i = 0; i < particle_count_target; i++) {
                     point_index = tri_points[lev_target][curr_target][i];
-                    target_particle = slice(curr_state, 4 * point_index, 1, 3);
+                    target_particle = slice(curr_state, 5 * point_index, 1, 3);
                     bary_cord = barycoords(v1, v2, v3, target_particle);
-                    modify[4 * i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1]);
-                    modify[4 * i + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1]);
-                    modify[4 * i + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1]);
+                    modify[5 * i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], 2);
+                    modify[5 * i + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], 2);
+                    modify[5 * i + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], 2);
                 }
             } else { // target has few points, do particle-X interaction
                 if (particle_count_source > many_count) { // source has lots of points, P-C interaction
@@ -192,7 +192,7 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                     v3s = vertices[iv3s];
                     for (int i = 0; i < particle_count_target; i++) {
                         point_index = tri_points[lev_target][curr_target][i];
-                        target_particle = slice(curr_state, 4 * point_index, 1, 3);
+                        target_particle = slice(curr_state, 5 * point_index, 1, 3);
                         for (int j = 0; j < 6; j++) {
                             us = source_points[j][0];
                             vs = source_points[j][1];
@@ -216,11 +216,11 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                         }
                         for (int j = 0; j < particle_count_source; j++) {
                             point_index = tri_points[lev_source][curr_source][j];
-                            source_particle = slice(curr_state, 4 * point_index, 1, 3);
+                            source_particle = slice(curr_state, 5 * point_index, 1, 3);
                             bary_cord = barycoords(v1s, v2s, v3s, source_particle);
-                            modify[4 * i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1]) * curr_state[4 * point_index + 3] * area;
-                            modify[4 * i + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1]) * curr_state[4 * point_index + 3] * area;
-                            modify[4 * i + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1]) * curr_state[4 * point_index + 3] * area;
+                            modify[5 * i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], 2) * curr_state[5 * point_index + 3] * area[point_index];
+                            modify[5 * i + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], 2) * curr_state[5 * point_index + 3] * area[point_index];
+                            modify[5 * i + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], 2) * curr_state[5 * point_index + 3] * area[point_index];
                         }
                     }
                 } else { // source has few points, P-P interaction
@@ -258,7 +258,7 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
         }
     }
     scalar_mult(modify, -1.0 / (4.0 * M_PI));
-    for (int i = 0; i < points; i++) modify[4 * i + 3] = -2 * omega * modify[4 * i + 2];
+    for (int i = 0; i < points; i++) modify[5 * i + 3] = -2 * omega * modify[5 * i + 2];
 }
 
 int particle_processor(int points_per_rank, int point_id, int total_ranks) {
@@ -286,13 +286,13 @@ void sync_buffer(vector<double>& buffer, int point_count, int ID, vector<int>& p
     for (int i = 0; i < point_count; i++) {
         thread = particle_thread[i];
         if (thread != ID) {
-            MPI_Get(&buffer[4 * i], 4, MPI_DOUBLE, thread, 4 * i, 4, MPI_DOUBLE, *win);
+            MPI_Get(&buffer[5 * i], 4, MPI_DOUBLE, thread, 5 * i, 4, MPI_DOUBLE, *win);
         }
     }
     MPI_Win_fence(0, *win);
 }
 
-#define point_count 655362
+// #define point_count 655362
 
 int main(int argc, char** argv) {
 
@@ -310,12 +310,13 @@ int main(int argc, char** argv) {
     double delta_t = 0.01, end_t = 1;
     double omega = 2 * M_PI;
     int time_steps = end_t / delta_t;
-    double area = (4 * M_PI) / point_count;
+    // double area = (4 * M_PI) / point_count;
     int icos_levels = 5;
     double radius = 1.0;
     double phi = (1 + sqrt(5)) / 2;
     double theta = 0.7;
     int many_count = 10;
+    int point_count = 10242, tri_count = 20480, max_points = 1000000;
 
     int points_per_rank = point_count / P;
     int tris_per_thread = 20 / P;
@@ -335,24 +336,30 @@ int main(int argc, char** argv) {
         tri_ub = 20;
     }
 
-    vector<double> curr_state(4 * point_count); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity
-    vector<double> swap_state(4 * point_count); // move particles around so that triangles have contiguous sections
-    vector<double> c_1(4 * point_count, 0);
-    vector<double> c_2(4 * point_count, 0);
-    vector<double> c_3(4 * point_count, 0);
-    vector<double> c_4(4 * point_count, 0);
-    vector<double> c12(4 * point_count, 0);
-    vector<double> c123(4 * point_count, 0);
-    vector<double> c1234(4 * point_count, 0);
-    vector<double> intermediate_1(4 * point_count);
-    vector<double> intermediate_2(4 * point_count);
-    vector<double> intermediate_3(4 * point_count);
+    vector<double> curr_state(5 * point_count); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity
+    vector<double> swap_state(5 * point_count); // move particles around so that triangles have contiguous sections
+    vector<double> c_1(5 * point_count, 0);
+    vector<double> c_2(5 * point_count, 0);
+    vector<double> c_3(5 * point_count, 0);
+    vector<double> c_4(5 * point_count, 0);
+    vector<double> c12(5 * point_count, 0);
+    vector<double> c123(5 * point_count, 0);
+    vector<double> c1234(5 * point_count, 0);
+    vector<double> intermediate_1(5 * point_count);
+    vector<double> intermediate_2(5 * point_count);
+    vector<double> intermediate_3(5 * point_count);
+    vector<double> area(point_count, 0);
+    vector<int> state;
 
     vector<vector<double>> vertices; // list of mesh vertices
     vector<vector<vector<double>>> triangle_info; // contains triangle centers, radii
     vector<vector<vector<int>>> triangle_verts; // triangle vertex indices
     vector<vector<vector<int>>> tri_points (icos_levels); // points in each triangle
     vector<vector<int>> point_locs (icos_levels, vector<int> (point_count, 0)); // triangle each point is in
+
+    vector<vector<int>> triangles(tri_count, vector<int> (3)); // triangles[i] is a length 3 int vector containing the indices of the points of the vertices
+    vector<vector<int>> vert_tris(point_count); // vert_tris[i] is the int vector containing the indices of the triangles adjacent to point i
+    vector<vector<int>> parent_verts(max_points, vector<int> (2, 0)); //
 
     vector<int> particle_thread(point_count, 0); // particle_thread[i] is the processor where particle i is located
     // vector<bool> particle_in_curr_thread(point_count, false); // true if particle i is in the current thread
@@ -366,18 +373,23 @@ int main(int argc, char** argv) {
     vector<int> tri_point_ub(P, 0); // high new order index in triangle i
     vector<int> tri_point_count(P, 0); // points in triangle i
 
-    MPI_Win_create(&curr_state[0], 4 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_curr_state);
-    MPI_Win_create(&intermediate_1[0], 4 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter1);
-    MPI_Win_create(&intermediate_2[0], 4 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter2);
-    MPI_Win_create(&intermediate_3[0], 4 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter3);
+    MPI_Win_create(&curr_state[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_curr_state);
+    MPI_Win_create(&intermediate_1[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter1);
+    MPI_Win_create(&intermediate_2[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter2);
+    MPI_Win_create(&intermediate_3[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter3);
 
     // fstream file("../points.csv");
-    fstream file("./points.csv");
+    ifstream file1("../10242points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../10242tris.csv");
+    ifstream file3("../10242vert_tris.csv");
+    ifstream file4("../10242vert_tri_count.csv");
     string line, word;
+    int tri_counts;
 
-    ofstream write_out;
-    write_out.open("fast_output_mpi.out", ofstream::out | ofstream::trunc);
-    write_out.close();
+    ofstream write_out1("direct_output_mpi.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
+    ofstream write_out2("direct_point_counts_mpi.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
+    write_out1.close();
+    write_out2.close();
 
     MPI_File fh;
     MPI_Barrier(MPI_COMM_WORLD);
@@ -393,22 +405,84 @@ int main(int argc, char** argv) {
     //     }
     // }
 
-    if (ID == 0) {
-        for (int i = 0; i < point_count; i++) {
-            getline(file, line);
-            stringstream str(line);
-            for (int j = 0; j < 4; j++) {
-                getline(str, word, ',');
-                curr_state[4 * i + j] = stod(word);
-            }
+    // if (ID == 0) {
+    //     for (int i = 0; i < point_count; i++) {
+    //         getline(file, line);
+    //         stringstream str(line);
+    //         for (int j = 0; j < 4; j++) {
+    //             getline(str, word, ',');
+    //             curr_state[5 * i + j] = stod(word);
+    //         }
+    //     }
+    // }
+    for (int i = 0; i < point_count; i++) {
+        getline(file1, line);
+        stringstream str1(line);
+        for (int j = 0; j < 4; j++) { // read in initial condition of each point
+            getline(str1, word, ',');
+            curr_state[5 * i + j] = stod(word);
+        }
+
+        getline(file4, line);
+        stringstream str4(line);
+        getline(str4, word, ',');
+        tri_counts = stod(word); // number of triangles each point borders
+
+        vert_tris[i] = vector<int> (tri_counts);
+        getline(file3, line);
+        stringstream str3(line);
+        for (int j = 0; j < tri_counts; j++) { // reads in each points adjacent triangles
+            getline(str3, word, ',');
+            vert_tris[i][j] = stod(word);
         }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Win_fence(0, win_curr_state);
-    if (ID != 0) {
-        MPI_Get(&curr_state[0], 4 * point_count, MPI_DOUBLE, 0, 0, 4 * point_count, MPI_DOUBLE, win_curr_state);
+
+    for (int i = 0; i < tri_count; i++) { // reads in triangle vertex information
+        getline(file2, line);
+        stringstream str2(line);
+        for (int j = 0; j < 3; j++) {
+            getline(str2, word, ',');
+            triangles[i][j] = stod(word);
+        }
     }
-    MPI_Win_fence(0, win_curr_state);
+
+    file1.close(); // close all the files we read from
+    file2.close();
+    file3.close();
+    file4.close();
+
+    vector<double> position;
+    double lat;
+    for (int i = 0; i < point_count; i++) {
+        position = slice(curr_state, 5 * i, 1, 3);
+        lat = lat_lon(position)[0];
+        curr_state[5 * i + 4] = lat; // initial latitude as passive tracer
+    }
+
+    int iv1, iv2, iv3;
+    double curr_area;
+    vector<double> v1, v2, v3;
+    for (int i = 0; i < tri_count; i++) {
+        // cout << i << endl;
+        iv1 = triangles[i][0];
+        iv2 = triangles[i][1];
+        iv3 = triangles[i][2];
+        // cout << iv1 << " " << iv2 << " " << iv3 << endl;
+        v1 = slice(curr_state, 5 * iv1, 1, 3);
+        v2 = slice(curr_state, 5 * iv2, 1, 3);
+        v3 = slice(curr_state, 5 * iv3, 1, 3);
+        curr_area = sphere_tri_area(v1, v2, v3, 1);
+        area[iv1] += curr_area / 3.0;
+        area[iv2] += curr_area / 3.0;
+        area[iv3] += curr_area / 3.0;
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Win_fence(0, win_curr_state);
+    // if (ID != 0) {
+    //     MPI_Get(&curr_state[0], 5 * point_count, MPI_DOUBLE, 0, 0, 5 * point_count, MPI_DOUBLE, win_curr_state);
+    // }
+    // MPI_Win_fence(0, win_curr_state);
 
     for (int i = 0; i < P; i++) {
         if (i < P - 1) {
@@ -429,9 +503,9 @@ int main(int argc, char** argv) {
     MPI_Barrier(MPI_COMM_WORLD);
     icos_init(vertices, triangle_info, triangle_verts, radius, icos_levels-1);
     points_assign(triangle_verts, vertices, curr_state, tri_points, point_locs, icos_levels, point_count);
-    for (int i = 0; i < 20; i++) {
-
-    }
+    // for (int i = 0; i < 20; i++) {
+    //
+    // }
     // MPI_Barrier(MPI_COMM_WORLD);
     // for (int i = 0; i < point_count; i++) {
     //     int tri = point_locs[0][i];
@@ -455,48 +529,48 @@ int main(int argc, char** argv) {
         sync_buffer(curr_state, point_count, ID, particle_thread, &win_curr_state);
         MPI_Barrier(MPI_COMM_WORLD);
         BVE_ffunc(c_1, curr_state, vertices, triangle_info, triangle_verts, tri_points, curr_time, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-        intermediate_1 = c_1;
-        scalar_mult(intermediate_1, delta_t / 2);
-        vec_add(intermediate_1, curr_state);
-        MPI_Barrier(MPI_COMM_WORLD);
-        sync_buffer(intermediate_1, point_count, ID, particle_thread, &win_inter1);
-        MPI_Barrier(MPI_COMM_WORLD);
+        // intermediate_1 = c_1;
+        // scalar_mult(intermediate_1, delta_t / 2);
+        // vec_add(intermediate_1, curr_state);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // sync_buffer(intermediate_1, point_count, ID, particle_thread, &win_inter1);
+        // MPI_Barrier(MPI_COMM_WORLD);
     //     // points_assign(triangle_verts, vertices, intermediate_1, tri_points, point_locs, icos_levels, point_count);
-        BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-        intermediate_2 = c_2;
-        scalar_mult(intermediate_2, delta_t / 2);
-        vec_add(intermediate_2, curr_state);
-        MPI_Barrier(MPI_COMM_WORLD);
-        sync_buffer(intermediate_2, point_count, ID, particle_thread, &win_inter2);
-        MPI_Barrier(MPI_COMM_WORLD);
+        // BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
+        // intermediate_2 = c_2;
+        // scalar_mult(intermediate_2, delta_t / 2);
+        // vec_add(intermediate_2, curr_state);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // sync_buffer(intermediate_2, point_count, ID, particle_thread, &win_inter2);
+        // MPI_Barrier(MPI_COMM_WORLD);
     //     // points_assign(triangle_verts, vertices, intermediate_2, tri_points, point_locs, icos_levels, point_count);
-        BVE_ffunc(c_3, intermediate_2, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-        intermediate_3 = c_3;
-        scalar_mult(intermediate_3, delta_t);
-        vec_add(intermediate_3, curr_state);
-        MPI_Barrier(MPI_COMM_WORLD);
-        sync_buffer(intermediate_3, point_count, ID, particle_thread, &win_inter3);
-        MPI_Barrier(MPI_COMM_WORLD);
+        // BVE_ffunc(c_3, intermediate_2, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
+        // intermediate_3 = c_3;
+        // scalar_mult(intermediate_3, delta_t);
+        // vec_add(intermediate_3, curr_state);
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // sync_buffer(intermediate_3, point_count, ID, particle_thread, &win_inter3);
+        // MPI_Barrier(MPI_COMM_WORLD);
     //     // points_assign(triangle_verts, vertices, intermediate_3, tri_points, point_locs, icos_levels, point_count);
-        BVE_ffunc(c_4, intermediate_3, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-        c1234 = c_1;
-        scalar_mult(c_2, 2);
-        vec_add(c1234, c_2);
-        scalar_mult(c_3, 2);
-        vec_add(c1234, c_3);
-        vec_add(c1234, c_4);
-        scalar_mult(c1234, delta_t / 6);
-        vec_add(curr_state, c1234);
-        for (int i = 0; i < point_count; i++) {
-            if (particle_thread[i] == ID) {
-                vector<double> projected = slice(curr_state, 4 * i, 1, 3);
-                project_to_sphere(projected, 1);
-                for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
-            }
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
-        sync_buffer(curr_state, point_count, ID, particle_thread, &win_curr_state);
-        MPI_Barrier(MPI_COMM_WORLD);
+        // BVE_ffunc(c_4, intermediate_3, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
+        // c1234 = c_1;
+        // scalar_mult(c_2, 2);
+        // vec_add(c1234, c_2);
+        // scalar_mult(c_3, 2);
+        // vec_add(c1234, c_3);
+        // vec_add(c1234, c_4);
+        // scalar_mult(c1234, delta_t / 6);
+        // vec_add(curr_state, c1234);
+        // for (int i = 0; i < point_count; i++) {
+        //     if (particle_thread[i] == ID) {
+        //         vector<double> projected = slice(curr_state, 4 * i, 1, 3);
+        //         project_to_sphere(projected, 1);
+        //         for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
+        //     }
+        // }
+        // MPI_Barrier(MPI_COMM_WORLD);
+        // sync_buffer(curr_state, point_count, ID, particle_thread, &win_curr_state);
+        // MPI_Barrier(MPI_COMM_WORLD);
     //         vector<double> projected = slice(curr_state, 4 * i, 1, 3);
     //         project_to_sphere(projected, 1);
     //         for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
@@ -510,7 +584,7 @@ int main(int argc, char** argv) {
         cout << "time taken: " << chrono::duration_cast<chrono::microseconds>(end_time - begin_time).count() << " microseconds" << endl;
     }
 
-    write_out.close();
+    // write_out.close();
     MPI_Finalize();
     return 0;
 }
