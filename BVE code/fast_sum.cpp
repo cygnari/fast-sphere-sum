@@ -2,7 +2,7 @@
 #include <cmath>
 #include <array>
 #include <vector>
-// #include <Accelerate/Accelerate.h>
+#include <Accelerate/Accelerate.h>
 #include <fstream>
 #include <sstream>
 #include <queue>
@@ -292,13 +292,12 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
 // #define point_count 2562
 
 int main() {
-    double delta_t = 0.01, end_t = 1; // end_t = number of days
-    int point_count = 2562, tri_count = 5120, time_steps = end_t / delta_t, max_points = 1000000;
-    // double delta_t = 0.01, end_t = 1;
+    double delta_t = 0.01; // end_t = number of days
+    // double end_t = 1;
+    double end_t = 3;
+    int point_count = 10242, tri_count = 20480, time_steps = end_t / delta_t, max_points = 1000000;
     double omega = 2 * M_PI; // coriolis
-    // int time_steps = end_t / delta_t;
-    // double area = (4 * M_PI) / point_count;
-    int icos_levels = 4;
+    int icos_levels = 3;
     double radius = 1.0;
     double phi = (1 + sqrt(5)) / 2;
     double theta = 0.7;
@@ -334,16 +333,15 @@ int main() {
     vector<double> interp_matrix (cluster_count * cluster_count, 0); // interpolation matrix
 
     // cout << "Here" << endl;
-    ifstream file1("../2562points_rh4.csv"); // ifstream = input file stream
-    ifstream file2("../2562tris.csv");
-    ifstream file3("../2562vert_tris.csv");
-    ifstream file4("../2562vert_tri_count.csv");
+    ifstream file1("../10242points_gv.csv"); // ifstream = input file stream
+    ifstream file2("../10242tris.csv");
+    ifstream file3("../10242vert_tris.csv");
+    ifstream file4("../10242vert_tri_count.csv");
     string line, word;
     int tri_counts;
 
     ofstream write_out1("fast_output.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
     ofstream write_out2("fast_point_counts.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
-    // write_out1.open("direct_output.csv", ofstream::out | ofstream::trunc);
 
     for (int i = 0; i < point_count; i++) {
         getline(file1, line);
@@ -432,8 +430,17 @@ int main() {
 
 
     // for (int t = 0; t < 1; t++) { // time iterate with RK4
+    cout << time_steps << endl;
     for (int t = 0; t < time_steps; t++) { // time iterate with RK4
         double curr_time = t * delta_t;
+        vector<double> c_1(5 * point_count, 0);
+        vector<double> c_2(5 * point_count, 0);
+        vector<double> c_3(5 * point_count, 0);
+        vector<double> c_4(5 * point_count, 0);
+        vector<double> c1234(5 * point_count, 0);
+        vector<double> intermediate_1(5 * point_count);
+        vector<double> intermediate_2(5 * point_count);
+        vector<double> intermediate_3(5 * point_count);
         points_assign(triangle_verts, vertices, curr_state, tri_points, point_locs, icos_levels, point_count);
         // cout << "Here 4" << endl;
         // cout << c_1[0] << endl;
@@ -441,18 +448,17 @@ int main() {
         intermediate_1 = c_1;
         scalar_mult(intermediate_1, delta_t / 2);
         vec_add(intermediate_1, curr_state);
-        // // points_assign(triangle_verts, vertices, intermediate_1, tri_points, point_locs, icos_levels, point_count);
-        // BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, 3);
+        points_assign(triangle_verts, vertices, intermediate_1, tri_points, point_locs, icos_levels, point_count);
         BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, theta, many_count, degree, interp_matrix, cluster_points, ipiv);
         intermediate_2 = c_2;
         scalar_mult(intermediate_2, delta_t / 2);
         vec_add(intermediate_2, curr_state);
-        // // points_assign(triangle_verts, vertices, intermediate_2, tri_points, point_locs, icos_levels, point_count);
+        points_assign(triangle_verts, vertices, intermediate_2, tri_points, point_locs, icos_levels, point_count);
         BVE_ffunc(c_3, intermediate_2, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, theta, many_count, degree, interp_matrix, cluster_points, ipiv);
         intermediate_3 = c_3;
         scalar_mult(intermediate_3, delta_t);
         vec_add(intermediate_3, curr_state);
-        // // points_assign(triangle_verts, vertices, intermediate_3, tri_points, point_locs, icos_levels, point_count);
+        points_assign(triangle_verts, vertices, intermediate_3, tri_points, point_locs, icos_levels, point_count);
         BVE_ffunc(c_4, intermediate_3, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t, delta_t, omega, area, point_count, icos_levels, radius, theta, many_count, degree, interp_matrix, cluster_points, ipiv);
         c1234 = c_1;
         scalar_mult(c_2, 2);
@@ -462,16 +468,20 @@ int main() {
         vec_add(c1234, c_4);
         scalar_mult(c1234, delta_t / 6);
         vec_add(c1234, curr_state); // c1234 is new state
+        // vec_add(curr_state, c1234);
         regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega); // regrids points so that they are regular, modifies curr_state
         // state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
+        state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
+        point_count = state[1];
+        tri_count = state[0];
         for (int i = 0; i < point_count; i++) {
-            vector<double> projected = slice(curr_state, 4 * i, 1, 3);
+            vector<double> projected = slice(curr_state, 5 * i, 1, 3);
             project_to_sphere(projected, 1);
-            for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
+            for (int j = 0; j < 3; j++) curr_state[5 * i + j] = projected[j]; // reproject points to surface of sphere
             write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "," << area[i] << "\n"; // write current state
         }
         write_out2 << point_count << "\n";
-        cout << t << endl;
+        cout << "t: " << t << " point_count " << point_count << endl;
     }
 
     chrono::steady_clock::time_point end = chrono::steady_clock::now();

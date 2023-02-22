@@ -567,10 +567,10 @@ void replace(vector<int>& vals, int find, int replacement) { // replace find in 
 
 vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, vector<double>& areas, vector<vector<int>>& parent_verts, int tri_count, int point_count, int max_points) { // adaptive mesh refinement
     double circulation_tol = 0.0025 / 4.0; // for 2562 particles, reduce for more starting particles
-    double vorticity_tol = 0.2 / 4.0; // for 2562 particles, reduce for more starting particles
+    double vorticity_tol = 0.2 / 2.0; // for 2562 particles, reduce for more starting particles
     int iv1, iv2, iv3, iv12, iv23, iv31,  itriv1v12v31, itriv2v12v23, itriv3v31v23, itriv12v23v31, old_tri_count;
     double vor1, vor2, vor3, max_val, min_val, vor1n, vor2n, vor3n, circulation, tri_area;
-    vector<double> v1, v2, v3, v12, v23, v31;
+    vector<double> v1, v2, v3, v12, v23, v31, p1, p2, p3;
     vector<int> return_values {tri_count, point_count}; // return new tri_count and point_count;
     vector<int> iv1tris, iv2tris, iv3tris;
     if (point_count >= max_points) return return_values;
@@ -581,14 +581,18 @@ vector<int> amr(vector<double>& curr_state, vector<vector<int>>& triangles, vect
             iv1 = triangles[i][0];
             iv2 = triangles[i][1];
             iv3 = triangles[i][2];
-            vor1 = curr_state[4 * iv1 + 3];
-            vor2 = curr_state[4 * iv2 + 3];
-            vor3 = curr_state[4 * iv3 + 3];
+            vor1 = curr_state[5 * iv1 + 3];
+            vor2 = curr_state[5 * iv2 + 3];
+            vor3 = curr_state[5 * iv3 + 3];
             max_val = max(vor1, max(vor2, vor3));
             min_val = min(vor1, min(vor2, vor3));
-            tri_area = (areas[iv1] + areas[iv2] + areas[iv3]) / 6.0;
-            circulation =  tri_area * (vor1 + vor2 + vor3) / 3.0;
-            if (((max_val - min_val) > vorticity_tol) and (circulation > circulation_tol) and (point_count < max_points)) { // if over threshold, refine
+            // tri_area = (areas[iv1] + areas[iv2] + areas[iv3]) / 6.0;
+            p1 = slice(curr_state, 5 * iv1, 1, 3);
+            p2 = slice(curr_state, 5 * iv2, 1, 3);
+            p3 = slice(curr_state, 5 * iv3, 1, 3);
+            tri_area = sphere_tri_area(p1, p2, p3, 1.0);
+            circulation =  tri_area * abs(vor1 + vor2 + vor3) / 3.0;
+            if ((((max_val - min_val) > vorticity_tol) or (circulation > circulation_tol)) and (point_count < max_points)) { // if over threshold, refine
                 // cout << "amr" << endl;
                 areas[iv1] -= tri_area / 6.0;
                 areas[iv2] -= tri_area / 6.0;
