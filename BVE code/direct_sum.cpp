@@ -37,7 +37,7 @@ int main() {
     double delta_t = 0.01; // end_t = number of days
     // double end_t = 1;
     double end_t = 3;
-    int point_count = 10242, tri_count = 20480, time_steps = end_t / delta_t, max_points = 1000000;
+    int point_count = 2562, tri_count = 5120, time_steps = end_t / delta_t, max_points = 1000000;
     double omega = 2 * M_PI; // coriolis factor
 
     vector<double> curr_state(5 * point_count); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity, 4 is passive tracer
@@ -57,10 +57,10 @@ int main() {
     vector<vector<int>> vert_tris(point_count); // vert_tris[i] is the int vector containing the indices of the triangles adjacent to point i
     vector<vector<int>> parent_verts(max_points, vector<int> (2, 0)); //
 
-    ifstream file1("../10242points_gv.csv"); // ifstream = input file stream
-    ifstream file2("../10242tris.csv");
-    ifstream file3("../10242vert_tris.csv");
-    ifstream file4("../10242vert_tri_count.csv");
+    ifstream file1("../2562points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../2562tris.csv");
+    ifstream file3("../2562vert_tris.csv");
+    ifstream file4("../2562vert_tri_count.csv");
     string line, word;
     int tri_counts;
 
@@ -137,8 +137,8 @@ int main() {
     }
     write_out2 << point_count << "\n";
 
-    for (int t = 0; t < time_steps; t++) { // time iterate with RK4
-    // for (int t = 0; t < 1; t++) {
+    // for (int t = 0; t < time_steps; t++) { // time iterate with RK4
+    for (int t = 0; t < 1; t++) {
         double curr_time = t * delta_t;
         vector<double> c_1(5 * point_count, 0);
         vector<double> c_2(5 * point_count, 0);
@@ -148,10 +148,12 @@ int main() {
         vector<double> intermediate_1(5 * point_count);
         vector<double> intermediate_2(5 * point_count);
         vector<double> intermediate_3(5 * point_count);
+        // cout << " state curr " << curr_state[5 * 1281] << endl;
         BVE_ffunc(c_1, curr_state, curr_time, delta_t, omega, area, point_count);
         intermediate_1 = c_1;
         scalar_mult(intermediate_1, delta_t / 2);
         vec_add(intermediate_1, curr_state);
+        // cout << " state inter1 " << intermediate_1[5 * 1281] << endl;
         BVE_ffunc(c_2, intermediate_1, curr_time + delta_t / 2, delta_t, omega, area, point_count);
         intermediate_2 = c_2;
         scalar_mult(intermediate_2, delta_t / 2);
@@ -170,10 +172,10 @@ int main() {
         scalar_mult(c1234, delta_t / 6);
         vec_add(c1234, curr_state); // c1234 is new state
         // vec_add(curr_state, c1234);
-        regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega); // regrids points so that they are regular, modifies curr_state
-        state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
-        point_count = state[1];
-        tri_count = state[0];
+        regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega, 0, point_count, 0); // regrids points so that they are regular, modifies curr_state
+        // state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
+        // point_count = state[1];
+        // tri_count = state[0];
         for (int i = 0; i < point_count; i++) {
             vector<double> projected = slice(curr_state, 5 * i, 1, 3);
             project_to_sphere(projected, 1);

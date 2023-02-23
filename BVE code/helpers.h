@@ -471,14 +471,14 @@ void tri_interp(int iv1, int iv2, int iv3, vector<double>& v1, vector<double>& v
     target_points[5 * i + 4] = bary[0] * curr_state[5 * iv1 + 4] + bary[1] * curr_state[5 * iv2 + 4] + bary[2] * curr_state[5 * iv3 + 4];
 }
 
-void regrid_points(vector<double>& curr_state, vector<double>& target_points, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, int point_count, int tri_count, double omega) { // remesh back to original particle locations
+void regrid_points(vector<double>& curr_state, vector<double>& target_points, vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, int point_count, int tri_count, double omega, int lb, int ub, int ID) { // remesh back to original particle locations
     vector<double> curr_target, curr_pos, v1, v2, v3; // need to fix vorticity remeshing
     vector<int> poss_tris;
     // double curr_vor;
     int test_count, iv1, iv2, iv3;
     int success = 0, failure = 0, bad = 0;
     bool found;
-    for (int i = 0; i < point_count; i++) {
+    for (int i = lb; i < ub; i++) {
         // cout << "regrid: " << i << endl;
         found = false;
         curr_target = slice(target_points, 5 * i, 1, 3);
@@ -531,6 +531,7 @@ void regrid_points(vector<double>& curr_state, vector<double>& target_points, ve
         }
     }
     // cout << "success: " << success << " failure: " << failure << " bad: " << bad << endl;
+    // cout << "success: " << success << " failure: " << failure << " bad: " << bad << " ID " << ID << endl;
 }
 
 vector<int> big_tri_verts(vector<vector<int>>& triangles, vector<vector<int>>& vert_tris, int iv1, int iv2, int iv3) {
