@@ -2,7 +2,7 @@
 #include <cmath>
 #include <array>
 #include <vector>
-#include <Accelerate/Accelerate.h>
+// #include <Accelerate/Accelerate.h>
 #include <fstream>
 #include <sstream>
 #include <queue>
@@ -433,55 +433,55 @@ int main() {
     cout << time_steps << endl;
     for (int t = 0; t < time_steps; t++) { // time iterate with RK4
         double curr_time = t * delta_t;
-        vector<double> c_1(5 * point_count, 0);
-        vector<double> c_2(5 * point_count, 0);
-        vector<double> c_3(5 * point_count, 0);
-        vector<double> c_4(5 * point_count, 0);
-        vector<double> c1234(5 * point_count, 0);
-        vector<double> intermediate_1(5 * point_count);
-        vector<double> intermediate_2(5 * point_count);
-        vector<double> intermediate_3(5 * point_count);
+        // vector<double> c_1(5 * point_count, 0);
+        // vector<double> c_2(5 * point_count, 0);
+        // vector<double> c_3(5 * point_count, 0);
+        // vector<double> c_4(5 * point_count, 0);
+        // vector<double> c1234(5 * point_count, 0);
+        // vector<double> intermediate_1(5 * point_count);
+        // vector<double> intermediate_2(5 * point_count);
+        // vector<double> intermediate_3(5 * point_count);
         points_assign(triangle_verts, vertices, curr_state, tri_points, point_locs, icos_levels, point_count);
         // cout << "Here 4" << endl;
         // cout << c_1[0] << endl;
         BVE_ffunc(c_1, curr_state, vertices, triangle_info, triangle_verts, tri_points, curr_time, delta_t, omega, area, point_count, icos_levels, radius, theta, many_count, degree, interp_matrix, cluster_points, ipiv);
-        intermediate_1 = c_1;
-        scalar_mult(intermediate_1, delta_t / 2);
-        vec_add(intermediate_1, curr_state);
-        points_assign(triangle_verts, vertices, intermediate_1, tri_points, point_locs, icos_levels, point_count);
-        BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, theta, many_count, degree, interp_matrix, cluster_points, ipiv);
-        intermediate_2 = c_2;
-        scalar_mult(intermediate_2, delta_t / 2);
-        vec_add(intermediate_2, curr_state);
-        points_assign(triangle_verts, vertices, intermediate_2, tri_points, point_locs, icos_levels, point_count);
-        BVE_ffunc(c_3, intermediate_2, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, theta, many_count, degree, interp_matrix, cluster_points, ipiv);
-        intermediate_3 = c_3;
-        scalar_mult(intermediate_3, delta_t);
-        vec_add(intermediate_3, curr_state);
-        points_assign(triangle_verts, vertices, intermediate_3, tri_points, point_locs, icos_levels, point_count);
-        BVE_ffunc(c_4, intermediate_3, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t, delta_t, omega, area, point_count, icos_levels, radius, theta, many_count, degree, interp_matrix, cluster_points, ipiv);
-        c1234 = c_1;
-        scalar_mult(c_2, 2);
-        vec_add(c1234, c_2);
-        scalar_mult(c_3, 2);
-        vec_add(c1234, c_3);
-        vec_add(c1234, c_4);
-        scalar_mult(c1234, delta_t / 6);
-        vec_add(c1234, curr_state); // c1234 is new state
-        // vec_add(curr_state, c1234);
-        regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega); // regrids points so that they are regular, modifies curr_state
+        // intermediate_1 = c_1;
+        // scalar_mult(intermediate_1, delta_t / 2);
+        // vec_add(intermediate_1, curr_state);
+        // points_assign(triangle_verts, vertices, intermediate_1, tri_points, point_locs, icos_levels, point_count);
+        // BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, theta, many_count, degree, interp_matrix, cluster_points, ipiv);
+        // intermediate_2 = c_2;
+        // scalar_mult(intermediate_2, delta_t / 2);
+        // vec_add(intermediate_2, curr_state);
+        // points_assign(triangle_verts, vertices, intermediate_2, tri_points, point_locs, icos_levels, point_count);
+        // BVE_ffunc(c_3, intermediate_2, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, theta, many_count, degree, interp_matrix, cluster_points, ipiv);
+        // intermediate_3 = c_3;
+        // scalar_mult(intermediate_3, delta_t);
+        // vec_add(intermediate_3, curr_state);
+        // points_assign(triangle_verts, vertices, intermediate_3, tri_points, point_locs, icos_levels, point_count);
+        // BVE_ffunc(c_4, intermediate_3, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t, delta_t, omega, area, point_count, icos_levels, radius, theta, many_count, degree, interp_matrix, cluster_points, ipiv);
+        // c1234 = c_1;
+        // scalar_mult(c_2, 2);
+        // vec_add(c1234, c_2);
+        // scalar_mult(c_3, 2);
+        // vec_add(c1234, c_3);
+        // vec_add(c1234, c_4);
+        // scalar_mult(c1234, delta_t / 6);
+        // vec_add(c1234, curr_state); // c1234 is new state
+        // // vec_add(curr_state, c1234);
+        // regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega); // regrids points so that they are regular, modifies curr_state
+        // // state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
         // state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
-        state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
-        point_count = state[1];
-        tri_count = state[0];
-        for (int i = 0; i < point_count; i++) {
-            vector<double> projected = slice(curr_state, 5 * i, 1, 3);
-            project_to_sphere(projected, 1);
-            for (int j = 0; j < 3; j++) curr_state[5 * i + j] = projected[j]; // reproject points to surface of sphere
-            write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "," << area[i] << "\n"; // write current state
-        }
-        write_out2 << point_count << "\n";
-        cout << "t: " << t << " point_count " << point_count << endl;
+        // point_count = state[1];
+        // tri_count = state[0];
+        // for (int i = 0; i < point_count; i++) {
+        //     vector<double> projected = slice(curr_state, 5 * i, 1, 3);
+        //     project_to_sphere(projected, 1);
+        //     for (int j = 0; j < 3; j++) curr_state[5 * i + j] = projected[j]; // reproject points to surface of sphere
+        //     write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "," << area[i] << "\n"; // write current state
+        // }
+        // write_out2 << point_count << "\n";
+        // cout << "t: " << t << " point_count " << point_count << endl;
     }
 
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
