@@ -286,7 +286,7 @@ void sync_buffer(vector<double>& buffer, int point_count, int ID, vector<int>& p
     for (int i = 0; i < point_count; i++) {
         thread = particle_thread[i];
         if (thread != ID) {
-            MPI_Get(&buffer[5 * i], 4, MPI_DOUBLE, thread, 5 * i, 4, MPI_DOUBLE, *win);
+            MPI_Get(&buffer[5 * i], 5, MPI_DOUBLE, thread, 5 * i, 5, MPI_DOUBLE, *win);
         }
     }
     MPI_Win_fence(0, *win);
@@ -306,6 +306,7 @@ int main(int argc, char** argv) {
     MPI_Win win_inter1;
     MPI_Win win_inter2;
     MPI_Win win_inter3;
+    MPI_Win win_c1234;
 
     double delta_t = 0.01, end_t = 1;
     double omega = 2 * M_PI;
@@ -316,7 +317,7 @@ int main(int argc, char** argv) {
     double phi = (1 + sqrt(5)) / 2;
     double theta = 0.7;
     int many_count = 10;
-    int point_count = 10242, tri_count = 20480, max_points = 1000000;
+    int point_count = 2562, tri_count = 2150, max_points = 1000000;
 
     int points_per_rank = point_count / P;
     int tris_per_thread = 20 / P;
@@ -377,19 +378,19 @@ int main(int argc, char** argv) {
     MPI_Win_create(&intermediate_1[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter1);
     MPI_Win_create(&intermediate_2[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter2);
     MPI_Win_create(&intermediate_3[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_inter3);
+    MPI_Win_create(&c1234[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_c1234);
 
     // fstream file("../points.csv");
-    ifstream file1("../10242points_rh4.csv"); // ifstream = input file stream
-    ifstream file2("../10242tris.csv");
-    ifstream file3("../10242vert_tris.csv");
-    ifstream file4("../10242vert_tri_count.csv");
+    ifstream file1("../2562points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../2562tris.csv");
+    ifstream file3("../2562vert_tris.csv");
+    ifstream file4("../2562vert_tri_count.csv");
     string line, word;
     int tri_counts;
 
-    ofstream write_out1("direct_output_mpi.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
-    ofstream write_out2("direct_point_counts_mpi.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
-    write_out1.close();
-    write_out2.close();
+    ofstream write_out1("fast_output_mpi.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
+    ofstream write_out2("fast_point_counts_mpi.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
+
 
     MPI_File fh;
     MPI_Barrier(MPI_COMM_WORLD);
@@ -415,14 +416,57 @@ int main(int argc, char** argv) {
     //         }
     //     }
     // }
-    for (int i = 0; i < point_count; i++) {
-        getline(file1, line);
-        stringstream str1(line);
-        for (int j = 0; j < 4; j++) { // read in initial condition of each point
-            getline(str1, word, ',');
-            curr_state[5 * i + j] = stod(word);
+    // for (int i = 0; i < point_count; i++) {
+    //     getline(file1, line);
+    //     stringstream str1(line);
+    //     for (int j = 0; j < 4; j++) { // read in initial condition of each point
+    //         getline(str1, word, ',');
+    //         curr_state[5 * i + j] = stod(word);
+    //     }
+    //
+    //     getline(file4, line);
+    //     stringstream str4(line);
+    //     getline(str4, word, ',');
+    //     tri_counts = stod(word); // number of triangles each point borders
+    //
+    //     vert_tris[i] = vector<int> (tri_counts);
+    //     getline(file3, line);
+    //     stringstream str3(line);
+    //     for (int j = 0; j < tri_counts; j++) { // reads in each points adjacent triangles
+    //         getline(str3, word, ',');
+    //         vert_tris[i][j] = stod(word);
+    //     }
+    // }
+    if (ID == 0) { // reads in the particles
+        vector<double> particle (5, 0);
+        vector<double> position;
+        double lat;
+        for (int i = 0; i < point_count; i++) {
+            getline(file1, line);
+            stringstream str(line);
+            target_loc = particle_thread[i];
+            // local_id = i - target_loc * points_per_rank;
+            target_points = processor_particle_count(target_loc, P, point_count);
+            for (int j = 0; j < 4; j++) {
+                getline(str, word, ',');
+                particle[j] = stod(word);
+            }
+            position = slice(particle, 0, 1, 3);
+            lat = lat_lon(position)[0];
+            particle[4] = lat;
+            if (target_loc == 0) {
+                // for (int j = 0; j < 5; j++) curr_state[5 * local_id + j] = particle[j];
+                for (int j = 0; j < 5; j++) curr_state[5 * i + j] = particle[j];
+            } else {
+                // cout << "here " << i << endl;
+                // MPI_Put(&particle[0], 5, MPI_DOUBLE, target_loc, 5 * local_id, 5, MPI_DOUBLE, win_curr_state);
+                MPI_Put(&particle[0], 5, MPI_DOUBLE, target_loc, 5 * i, 5, MPI_DOUBLE, win_curr_state);
+            }
         }
+        // begin_time = chrono::steady_clock::now();
+    }
 
+    for (int i = 0; i < point_count; i++) {
         getline(file4, line);
         stringstream str4(line);
         getline(str4, word, ',');
@@ -446,18 +490,19 @@ int main(int argc, char** argv) {
         }
     }
 
-    file1.close(); // close all the files we read from
-    file2.close();
-    file3.close();
-    file4.close();
+    MPI_Barrier(MPI_COMM_WORLD);
+    // sync_buffer(curr_state, ID, P, lower_bounds, point_counts, &win_curr_state);
+    sync_buffer(curr_state, point_count, ID, particle_thread, &win_curr_state);
+    MPI_Barrier(MPI_COMM_WORLD);
 
-    vector<double> position;
-    double lat;
-    for (int i = 0; i < point_count; i++) {
-        position = slice(curr_state, 5 * i, 1, 3);
-        lat = lat_lon(position)[0];
-        curr_state[5 * i + 4] = lat; // initial latitude as passive tracer
-    }
+    // for (int i = 0; i < tri_count; i++) { // reads in triangle vertex information
+    //     getline(file2, line);
+    //     stringstream str2(line);
+    //     for (int j = 0; j < 3; j++) {
+    //         getline(str2, word, ',');
+    //         triangles[i][j] = stod(word);
+    //     }
+    // }
 
     int iv1, iv2, iv3;
     double curr_area;
@@ -476,6 +521,40 @@ int main(int argc, char** argv) {
         area[iv2] += curr_area / 3.0;
         area[iv3] += curr_area / 3.0;
     }
+
+    file1.close(); // close all the files we read from
+    file2.close();
+    file3.close();
+    file4.close();
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+
+    // vector<double> position;
+    // double lat;
+    // for (int i = 0; i < point_count; i++) {
+    //     position = slice(curr_state, 5 * i, 1, 3);
+    //     lat = lat_lon(position)[0];
+    //     curr_state[5 * i + 4] = lat; // initial latitude as passive tracer
+    // }
+    //
+    // int iv1, iv2, iv3;
+    // double curr_area;
+    // vector<double> v1, v2, v3;
+    // for (int i = 0; i < tri_count; i++) {
+    //     // cout << i << endl;
+    //     iv1 = triangles[i][0];
+    //     iv2 = triangles[i][1];
+    //     iv3 = triangles[i][2];
+    //     // cout << iv1 << " " << iv2 << " " << iv3 << endl;
+    //     v1 = slice(curr_state, 5 * iv1, 1, 3);
+    //     v2 = slice(curr_state, 5 * iv2, 1, 3);
+    //     v3 = slice(curr_state, 5 * iv3, 1, 3);
+    //     curr_area = sphere_tri_area(v1, v2, v3, 1);
+    //     area[iv1] += curr_area / 3.0;
+    //     area[iv2] += curr_area / 3.0;
+    //     area[iv3] += curr_area / 3.0;
+    // }
 
     MPI_Barrier(MPI_COMM_WORLD);
     // MPI_Win_fence(0, win_curr_state);
@@ -516,6 +595,14 @@ int main(int argc, char** argv) {
 
     if (ID == 0) begin_time = chrono::steady_clock::now();
 
+    if (ID == 0) {
+        for (int i = 0; i < point_count; i++) {
+            write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "," << area[i] << "\n"; // write current state
+        }
+        write_out2 << point_count << "\n";
+        // cout << t << endl;
+    }
+
 
 
     // for (int i = 0; i < point_count; i++) {
@@ -529,48 +616,66 @@ int main(int argc, char** argv) {
         sync_buffer(curr_state, point_count, ID, particle_thread, &win_curr_state);
         MPI_Barrier(MPI_COMM_WORLD);
         BVE_ffunc(c_1, curr_state, vertices, triangle_info, triangle_verts, tri_points, curr_time, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-        // intermediate_1 = c_1;
-        // scalar_mult(intermediate_1, delta_t / 2);
-        // vec_add(intermediate_1, curr_state);
-        // MPI_Barrier(MPI_COMM_WORLD);
-        // sync_buffer(intermediate_1, point_count, ID, particle_thread, &win_inter1);
-        // MPI_Barrier(MPI_COMM_WORLD);
+        intermediate_1 = c_1;
+        scalar_mult(intermediate_1, delta_t / 2);
+        vec_add(intermediate_1, curr_state);
+        MPI_Barrier(MPI_COMM_WORLD);
+        sync_buffer(intermediate_1, point_count, ID, particle_thread, &win_inter1);
+        MPI_Barrier(MPI_COMM_WORLD);
     //     // points_assign(triangle_verts, vertices, intermediate_1, tri_points, point_locs, icos_levels, point_count);
         // BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-        // intermediate_2 = c_2;
-        // scalar_mult(intermediate_2, delta_t / 2);
-        // vec_add(intermediate_2, curr_state);
-        // MPI_Barrier(MPI_COMM_WORLD);
-        // sync_buffer(intermediate_2, point_count, ID, particle_thread, &win_inter2);
-        // MPI_Barrier(MPI_COMM_WORLD);
+        intermediate_2 = c_2;
+        scalar_mult(intermediate_2, delta_t / 2);
+        vec_add(intermediate_2, curr_state);
+        MPI_Barrier(MPI_COMM_WORLD);
+        sync_buffer(intermediate_2, point_count, ID, particle_thread, &win_inter2);
+        MPI_Barrier(MPI_COMM_WORLD);
+
     //     // points_assign(triangle_verts, vertices, intermediate_2, tri_points, point_locs, icos_levels, point_count);
-        // BVE_ffunc(c_3, intermediate_2, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-        // intermediate_3 = c_3;
-        // scalar_mult(intermediate_3, delta_t);
-        // vec_add(intermediate_3, curr_state);
-        // MPI_Barrier(MPI_COMM_WORLD);
-        // sync_buffer(intermediate_3, point_count, ID, particle_thread, &win_inter3);
-        // MPI_Barrier(MPI_COMM_WORLD);
-    //     // points_assign(triangle_verts, vertices, intermediate_3, tri_points, point_locs, icos_levels, point_count);
-        // BVE_ffunc(c_4, intermediate_3, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-        // c1234 = c_1;
-        // scalar_mult(c_2, 2);
-        // vec_add(c1234, c_2);
-        // scalar_mult(c_3, 2);
-        // vec_add(c1234, c_3);
-        // vec_add(c1234, c_4);
-        // scalar_mult(c1234, delta_t / 6);
+        BVE_ffunc(c_3, intermediate_2, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
+        intermediate_3 = c_3;
+        scalar_mult(intermediate_3, delta_t);
+        vec_add(intermediate_3, curr_state);
+        MPI_Barrier(MPI_COMM_WORLD);
+        sync_buffer(intermediate_3, point_count, ID, particle_thread, &win_inter3);
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        // points_assign(triangle_verts, vertices, intermediate_3, tri_points, point_locs, icos_levels, point_count);
+        BVE_ffunc(c_4, intermediate_3, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
+        c1234 = c_1;
+        scalar_mult(c_2, 2);
+        vec_add(c1234, c_2);
+        scalar_mult(c_3, 2);
+        vec_add(c1234, c_3);
+        vec_add(c1234, c_4);
+        scalar_mult(c1234, delta_t / 6);
+        vec_add(c1234, curr_state);
+        MPI_Barrier(MPI_COMM_WORLD);
+        sync_buffer(c1234, point_count, ID, particle_thread, &win_c1234);
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        regrid_point2(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega, ID, particle_thread);
+        cout << "Here 2" << endl;
+
         // vec_add(curr_state, c1234);
-        // for (int i = 0; i < point_count; i++) {
-        //     if (particle_thread[i] == ID) {
-        //         vector<double> projected = slice(curr_state, 4 * i, 1, 3);
-        //         project_to_sphere(projected, 1);
-        //         for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
-        //     }
-        // }
-        // MPI_Barrier(MPI_COMM_WORLD);
-        // sync_buffer(curr_state, point_count, ID, particle_thread, &win_curr_state);
-        // MPI_Barrier(MPI_COMM_WORLD);
+        for (int i = 0; i < point_count; i++) {
+            if (particle_thread[i] == ID) {
+                vector<double> projected = slice(curr_state, 5 * i, 1, 3);
+                project_to_sphere(projected, 1);
+                for (int j = 0; j < 3; j++) curr_state[5 * i + j] = projected[j]; // reproject points to surface of sphere
+            }
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+        sync_buffer(curr_state, point_count, ID, particle_thread, &win_curr_state);
+        MPI_Barrier(MPI_COMM_WORLD);
+        if (ID == 0) {
+            for (int i = 0; i < point_count; i++) {
+                write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "," << area[i] << "\n"; // write current state
+            }
+            write_out2 << point_count << "\n";
+            cout << t << endl;
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
     //         vector<double> projected = slice(curr_state, 4 * i, 1, 3);
     //         project_to_sphere(projected, 1);
     //         for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
@@ -585,6 +690,8 @@ int main(int argc, char** argv) {
     }
 
     // write_out.close();
+    write_out1.close();
+    write_out2.close();
     MPI_Finalize();
     return 0;
 }

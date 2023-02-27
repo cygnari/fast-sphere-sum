@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
     MPI_Win win_c1234;
 
     double delta_t = 0.01, end_t = 1; // end_t = number of days
-    int point_count = 642, tri_count = 1280, time_steps = end_t / delta_t, max_points = 1000000;
+    int point_count = 163842, tri_count = 327680, time_steps = end_t / delta_t, max_points = 1000000;
 
     chrono::steady_clock::time_point begin_time;
 
@@ -161,10 +161,10 @@ int main(int argc, char** argv) {
     // fstream file("../points.csv");
     // fstream file("./points.csv");
     // string line, word;
-    ifstream file1("../642points_rh4.csv"); // ifstream = input file stream
-    ifstream file2("../642tris.csv");
-    ifstream file3("../642vert_tris.csv");
-    ifstream file4("../642vert_tri_count.csv");
+    ifstream file1("../163842points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../163842tris.csv");
+    ifstream file3("../163842vert_tris.csv");
+    ifstream file4("../163842vert_tri_count.csv");
     string line, word;
     int tri_counts;
 
