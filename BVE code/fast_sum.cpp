@@ -419,19 +419,19 @@ int main() {
         cout << "dgetrf: " << info << endl;
     }
 
-    for (int i = 0; i < point_count; i++) { // write out initial state
-        write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] <<  "," << area[i] << "\n";
-    }
-    write_out2 << point_count << "\n";
+    // for (int i = 0; i < point_count; i++) { // write out initial state
+    //     write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] <<  "," << area[i] << "\n";
+    // }
+    // write_out2 << point_count << "\n";
 
     // cout << "Here 3" << endl;
 
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
 
-    // for (int t = 0; t < 1; t++) { // time iterate with RK4
-    cout << time_steps << endl;
-    for (int t = 0; t < time_steps; t++) { // time iterate with RK4
+    for (int t = 0; t < 1; t++) { // time iterate with RK4
+    // cout << time_steps << endl;
+    // for (int t = 0; t < time_steps; t++) { // time iterate with RK4
         double curr_time = t * delta_t;
         // vector<double> c_1(5 * point_count, 0);
         // vector<double> c_2(5 * point_count, 0);
