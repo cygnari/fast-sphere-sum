@@ -317,7 +317,7 @@ int main(int argc, char** argv) {
     double phi = (1 + sqrt(5)) / 2;
     double theta = 0.7;
     int many_count = 10;
-    int point_count = 2562, tri_count = 2150, max_points = 1000000;
+    int point_count = 10242, tri_count = 20480, max_points = 1000000;
 
     int points_per_rank = point_count / P;
     int tris_per_thread = 20 / P;
@@ -381,10 +381,10 @@ int main(int argc, char** argv) {
     MPI_Win_create(&c1234[0], 5 * point_count * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_c1234);
 
     // fstream file("../points.csv");
-    ifstream file1("../2562points_rh4.csv"); // ifstream = input file stream
-    ifstream file2("../2562tris.csv");
-    ifstream file3("../2562vert_tris.csv");
-    ifstream file4("../2562vert_tri_count.csv");
+    ifstream file1("../10242points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../10242tris.csv");
+    ifstream file3("../10242vert_tris.csv");
+    ifstream file4("../10242vert_tri_count.csv");
     string line, word;
     int tri_counts;
 
