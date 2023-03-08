@@ -2,7 +2,7 @@
 #include <cmath>
 #include <array>
 #include <vector>
-// #include <Accelerate/Accelerate.h>
+#include <Accelerate/Accelerate.h>
 #include <fstream>
 #include <queue>
 #include <sstream>
@@ -312,7 +312,7 @@ int main(int argc, char** argv) {
     double omega = 2 * M_PI;
     int time_steps = end_t / delta_t;
     // double area = (4 * M_PI) / point_count;
-    int icos_levels = 3;
+    int icos_levels = 2;
     double radius = 1.0;
     double phi = (1 + sqrt(5)) / 2;
     double theta = 0.7;
@@ -392,9 +392,9 @@ int main(int argc, char** argv) {
     ofstream write_out2("fast_point_counts_mpi.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
 
 
-    MPI_File fh;
+    // MPI_File fh;
     MPI_Barrier(MPI_COMM_WORLD);
-    MPI_File_open(MPI_COMM_WORLD, "./direct_output_mpi.out", MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
+    // MPI_File_open(MPI_COMM_WORLD, "./direct_output_mpi.out", MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
 
     int target_loc, local_id, target_points;
 
@@ -616,72 +616,72 @@ int main(int argc, char** argv) {
         sync_buffer(curr_state, point_count, ID, particle_thread, &win_curr_state);
         MPI_Barrier(MPI_COMM_WORLD);
         BVE_ffunc(c_1, curr_state, vertices, triangle_info, triangle_verts, tri_points, curr_time, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-    //     intermediate_1 = c_1;
-    //     scalar_mult(intermediate_1, delta_t / 2);
-    //     vec_add(intermediate_1, curr_state);
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    //     sync_buffer(intermediate_1, point_count, ID, particle_thread, &win_inter1);
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    // //     // points_assign(triangle_verts, vertices, intermediate_1, tri_points, point_locs, icos_levels, point_count);
-    //     // BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-    //     intermediate_2 = c_2;
-    //     scalar_mult(intermediate_2, delta_t / 2);
-    //     vec_add(intermediate_2, curr_state);
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    //     sync_buffer(intermediate_2, point_count, ID, particle_thread, &win_inter2);
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    //
-    // //     // points_assign(triangle_verts, vertices, intermediate_2, tri_points, point_locs, icos_levels, point_count);
-    //     BVE_ffunc(c_3, intermediate_2, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-    //     intermediate_3 = c_3;
-    //     scalar_mult(intermediate_3, delta_t);
-    //     vec_add(intermediate_3, curr_state);
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    //     sync_buffer(intermediate_3, point_count, ID, particle_thread, &win_inter3);
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    //
-    //     // points_assign(triangle_verts, vertices, intermediate_3, tri_points, point_locs, icos_levels, point_count);
-    //     BVE_ffunc(c_4, intermediate_3, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
-    //     c1234 = c_1;
-    //     scalar_mult(c_2, 2);
-    //     vec_add(c1234, c_2);
-    //     scalar_mult(c_3, 2);
-    //     vec_add(c1234, c_3);
-    //     vec_add(c1234, c_4);
-    //     scalar_mult(c1234, delta_t / 6);
-    //     vec_add(c1234, curr_state);
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    //     sync_buffer(c1234, point_count, ID, particle_thread, &win_c1234);
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    //
-    //     regrid_point2(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega, ID, particle_thread);
-    //     cout << "Here 2" << endl;
-    //
-    //     // vec_add(curr_state, c1234);
-    //     for (int i = 0; i < point_count; i++) {
-    //         if (particle_thread[i] == ID) {
-    //             vector<double> projected = slice(curr_state, 5 * i, 1, 3);
-    //             project_to_sphere(projected, 1);
-    //             for (int j = 0; j < 3; j++) curr_state[5 * i + j] = projected[j]; // reproject points to surface of sphere
-    //         }
-    //     }
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    //     sync_buffer(curr_state, point_count, ID, particle_thread, &win_curr_state);
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    //     if (ID == 0) {
-    //         for (int i = 0; i < point_count; i++) {
-    //             write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "," << area[i] << "\n"; // write current state
-    //         }
-    //         write_out2 << point_count << "\n";
-    //         cout << t << endl;
-    //     }
-    //     MPI_Barrier(MPI_COMM_WORLD);
-            // vector<double> projected = slice(curr_state, 4 * i, 1, 3);
-            // project_to_sphere(projected, 1);
-            // for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
-            // write_out << curr_state[4 * i] << "," << curr_state[4 * i + 1] << "," << curr_state[4 * i + 2] << "," << curr_state[4 * i + 3] << "\n"; // write position
+        intermediate_1 = c_1;
+        scalar_mult(intermediate_1, delta_t / 2);
+        vec_add(intermediate_1, curr_state);
+        MPI_Barrier(MPI_COMM_WORLD);
+        sync_buffer(intermediate_1, point_count, ID, particle_thread, &win_inter1);
+        MPI_Barrier(MPI_COMM_WORLD);
+    //     // points_assign(triangle_verts, vertices, intermediate_1, tri_points, point_locs, icos_levels, point_count);
+        // BVE_ffunc(c_2, intermediate_1, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
+        intermediate_2 = c_2;
+        scalar_mult(intermediate_2, delta_t / 2);
+        vec_add(intermediate_2, curr_state);
+        MPI_Barrier(MPI_COMM_WORLD);
+        sync_buffer(intermediate_2, point_count, ID, particle_thread, &win_inter2);
+        MPI_Barrier(MPI_COMM_WORLD);
+
+    //     // points_assign(triangle_verts, vertices, intermediate_2, tri_points, point_locs, icos_levels, point_count);
+        BVE_ffunc(c_3, intermediate_2, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t / 2, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
+        intermediate_3 = c_3;
+        scalar_mult(intermediate_3, delta_t);
+        vec_add(intermediate_3, curr_state);
+        MPI_Barrier(MPI_COMM_WORLD);
+        sync_buffer(intermediate_3, point_count, ID, particle_thread, &win_inter3);
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        // points_assign(triangle_verts, vertices, intermediate_3, tri_points, point_locs, icos_levels, point_count);
+        BVE_ffunc(c_4, intermediate_3, vertices, triangle_info, triangle_verts, tri_points, curr_time + delta_t, delta_t, omega, area, point_count, icos_levels, radius, 0.7, many_count, tri_lb, tri_ub);
+        c1234 = c_1;
+        scalar_mult(c_2, 2);
+        vec_add(c1234, c_2);
+        scalar_mult(c_3, 2);
+        vec_add(c1234, c_3);
+        vec_add(c1234, c_4);
+        scalar_mult(c1234, delta_t / 6);
+        vec_add(c1234, curr_state);
+        MPI_Barrier(MPI_COMM_WORLD);
+        sync_buffer(c1234, point_count, ID, particle_thread, &win_c1234);
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        regrid_point2(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega, ID, particle_thread);
+        cout << "Here 2" << endl;
+
+        // vec_add(curr_state, c1234);
+        for (int i = 0; i < point_count; i++) {
+            if (particle_thread[i] == ID) {
+                vector<double> projected = slice(curr_state, 5 * i, 1, 3);
+                project_to_sphere(projected, 1);
+                for (int j = 0; j < 3; j++) curr_state[5 * i + j] = projected[j]; // reproject points to surface of sphere
+            }
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+        sync_buffer(curr_state, point_count, ID, particle_thread, &win_curr_state);
+        MPI_Barrier(MPI_COMM_WORLD);
+        if (ID == 0) {
+            for (int i = 0; i < point_count; i++) {
+                write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "," << area[i] << "\n"; // write current state
+            }
+            write_out2 << point_count << "\n";
+            cout << t << endl;
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+        //     vector<double> projected = slice(curr_state, 4 * i, 1, 3);
+        //     project_to_sphere(projected, 1);
+        //     for (int j = 0; j < 3; j++) curr_state[4 * i + j] = projected[j]; // reproject points to surface of sphere
+        //     write_out << curr_state[4 * i] << "," << curr_state[4 * i + 1] << "," << curr_state[4 * i + 2] << "," << curr_state[4 * i + 3] << "\n"; // write position
         // }
-        // cout << t << endl;
+        cout << t << endl;
     }
 
     if (ID == 0) {
