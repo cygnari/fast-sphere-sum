@@ -27,16 +27,20 @@ int main(int argc, char** argv) { // run the dynamics
     // argv[2] is whether to use amr or not, n for no, a for amr
     // argv[3] is whether ot not to use mpi, n for no, m for mpi
     // argv[4] is the initial vorticity distribution
+    // argv[5] is whether to remesh or not, n for no, r for remesh
+    // argv[6] is the number of points, options 642, 2562, 10242, 40962, 163842
 
     double delta_t = 0.01; // time step in days
     double end_t = 3.0; //end time in days
-    int point_count = 2562; // number of points
+    // int point_count = 2562; // number of points
+    int point_count = stoi(argv[6]);
     int old_point_count; // previous number of points if AMR is being used
     int tri_count = 2 * (point_count - 2); // number of triangle faces
-    int time_steps = end_t / delta_t; // number of time steps
+    int time_steps = end_t / delta_t; // number of time steps, for real runs
+    // int time_steps = 1; // testing configuration
     double omega = 2 * M_PI; // coriolis factor
     double radius = 1.0; // radius of the sphere
-    bool use_mpi = false;
+    bool use_mpi = false, use_amr = false, use_remesh = false;
     int mpi_ranks;
 
     vector<double> curr_state(5 * point_count); // 0 is x_pos, 1 is y_pos, 2 is z_pos, 3 is vorticity, 4 is passive tracer
@@ -56,8 +60,11 @@ int main(int argc, char** argv) { // run the dynamics
     // read the points, replace eventually with inline point generation
     read_points(point_count, tri_count, curr_state, vert_tris, triangles);
 
+    // initialize areas
+    area_init(curr_state, area, triangles, tri_count);
+
     // initialize vorticity and tracer
-    vorticity_init(curr_state, point_count, argv[4]);
+    vorticity_init(curr_state, area, point_count, argv[4]);
 
     if (argv[1][0] == 'f') { // fast summation init
         int icos_levels = 5; // how much to refine the matrix
@@ -77,6 +84,7 @@ int main(int argc, char** argv) { // run the dynamics
     if (argv[2][0] == 'a') { // initialize for amr
         int max_points = 10 * point_count; // limit on amr
         vector<vector<int>> parent_verts(max_points, vector<int> (2, 0)); // the two points that a new point comes from
+        use_amr = true;
     }
 
     if (argv[3][0] == 'm') { // use MPI
@@ -94,19 +102,35 @@ int main(int argc, char** argv) { // run the dynamics
         MPI_Win win_c1234;
     }
 
-    area_init(curr_state, area, triangles, tri_count);
+    if (argv[5][0] == 'r') {
+        use_remesh = true;
+    }
 
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
-    ofstream write_out1("output_" + to_string(point_count) + "_" + argv[1] + "_" + argv[2] + "_" + argv[4] + ".csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
-    ofstream write_out2("point_counts_" + to_string(point_count) + "_" + argv[1] + "_" + argv[2] + "_" + argv[4] + ".csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
+    string run_config = to_string(point_count) + "_" + argv[4] + "_" + argv[1]; // point count, configuration, and direct/fast
+    if (use_amr) {
+        run_config += "_";
+        run_config += argv[2];
+    }
+    if (use_mpi) {
+        run_config += "_";
+        run_config += argv[3];
+    }
+    if (use_remesh) {
+        run_config += "_";
+        run_config += argv[5];
+    }
+    run_config += "_" + to_string(time_steps);
+    ofstream write_out1("output_" + run_config + ".csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
+    ofstream write_out2("point_counts_" + run_config + ".csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
 
     for (int i = 0; i < point_count; i++) { // write out initial state
         write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] <<  "," << area[i] << "\n";
     }
     write_out2 << point_count << "\n";
 
-    for (int t = 0; t < 1; t++) {
+    for (int t = 0; t < time_steps; t++) {
         double curr_time = t * delta_t;
         // vector<double> c_1(5 * point_count, 0);
         // vector<double> c_2(5 * point_count, 0);
@@ -142,9 +166,12 @@ int main(int argc, char** argv) { // run the dynamics
         vec_add(c1234, c_3);
         vec_add(c1234, c_4);
         scalar_mult(c1234, delta_t / 6);
-        // vec_add(c1234, curr_state); // c1234 is new state
-        vec_add(curr_state, c1234);
-        // regrid_points(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega, 0, point_count, 0); // regrids points so that they are regular, modifies curr_state
+        if (use_remesh) {
+            vec_add(c1234, curr_state);
+            regrid_points2(c1234, curr_state, triangles, vert_tris, point_count, tri_count, omega, 0, point_count, 0); // regrids points so that they are regular, modifies curr_state
+        } else {
+            vec_add(curr_state, c1234);
+        }
         // state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
         // point_count = state[1];
         // tri_count = state[0];
