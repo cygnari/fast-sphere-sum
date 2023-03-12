@@ -9,6 +9,7 @@
 #include <cassert>
 #include <algorithm>
 #include "helpers.h"
+#include "struct_list.h"
 #include "fast_rhs.h"
 
 void rhs_direct_sum(vector<double>& modify, vector<double>& curr_state, vector<double>& area, double omega, int points) { // direct summation for all of RHS
@@ -30,11 +31,26 @@ void rhs_direct_sum(vector<double>& modify, vector<double>& curr_state, vector<d
     }
 }
 
-void rhs_func(vector<double>& modify, vector<double>& curr_state, vector<double>& area, double omega, int points, char type) {
-    if (type == 'd') { // d for direct
-        rhs_direct_sum(modify, curr_state, area, omega, points);
-    } else if (type == 'f') { // f for fast
-        // rhs_fast_sum()
+void rhs_fast_sum(vector<double>& modify, vector<double>& curr_state, vector<double>& area, vector<interaction_pair>& interactions, icos_struct icos1, interp_struct interp1, double omega, int points) {
+    for (int i = 0; i < interactions.size(); i++) {
+        // cout << i << endl;
+        // cout << interactions[i].type << endl;
+        if (interactions[i].type == "pp") pp(modify, curr_state, area, icos1, interactions[i]);
+        else if (interactions[i].type == "cp") cp(modify, curr_state, area, icos1, interp1, interactions[i]);
+        else if (interactions[i].type == "pc") pc(modify, curr_state, area, icos1, interp1, interactions[i]);
+        else cc(modify, curr_state, area, icos1, interp1, interactions[i]);
+    }
+    scalar_mult(modify, -1.0 / (4.0 * M_PI));
+    for (int i = 0; i < points; i++) modify[5 * i + 3] = -2 * omega * modify[5 * i + 2];
+}
+
+
+void rhs_func(vector<double>& modify, vector<double>& curr_state, vector<double>& area, double omega, run_config config1) {
+    fill(modify.begin(), modify.end(), 0);
+    if (config1.use_fast) {
+        rhs_fast_sum(modify, curr_state, area, config1.icos.interactions, config1.icos, config1.interp, omega, config1.point_count);
+    } else { // f for fast
+        rhs_direct_sum(modify, curr_state, area, omega, config1.point_count);
     }
 
 }

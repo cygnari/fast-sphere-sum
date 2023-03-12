@@ -147,6 +147,7 @@ void BVE_ffunc(vector<double>& modify, vector<double>& curr_state, vector<vector
                             func_val = BVE_gfunc(curr_points[i], placeholder1);
                             for (int k = 0; k < 3; k++) func_vals[j + cluster_count * k] = func_val[k];
                         }
+                        cout << interp_matrix.size() << " " << func_vals.size() << " " << dim << " " <<  nrhs << endl;
                         dgetrs_(&trans, &dim, &nrhs, &*interp_matrix.begin(), &dim, ipiv, &*func_vals.begin(), &dim, &info);
                         if (info > 0) {
                             cout << info << endl;
@@ -295,7 +296,7 @@ int main() {
     double delta_t = 0.01; // end_t = number of days
     // double end_t = 1;
     double end_t = 3;
-    int point_count = 10242, tri_count = 20480, time_steps = end_t / delta_t, max_points = 1000000;
+    int point_count = 2562, tri_count = 5120, time_steps = end_t / delta_t, max_points = 1000000;
     double omega = 2 * M_PI; // coriolis
     int icos_levels = 3;
     double radius = 1.0;
@@ -333,10 +334,10 @@ int main() {
     vector<double> interp_matrix (cluster_count * cluster_count, 0); // interpolation matrix
 
     // cout << "Here" << endl;
-    ifstream file1("../10242points_gv.csv"); // ifstream = input file stream
-    ifstream file2("../10242tris.csv");
-    ifstream file3("../10242vert_tris.csv");
-    ifstream file4("../10242vert_tri_count.csv");
+    ifstream file1("../2562points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../2562tris.csv");
+    ifstream file3("../2562vert_tris.csv");
+    ifstream file4("../2562vert_tri_count.csv");
     string line, word;
     int tri_counts;
 

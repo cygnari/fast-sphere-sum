@@ -9,15 +9,8 @@
 #include <cassert>
 #include <algorithm>
 #include "helpers.h"
-
-struct icos_struct {
-    int levels;
-    double radius;
-    vector<vector<double>> verts; // list of icosahedron vertices
-    vector<vector<vector<double>>> tri_info; // information about each triangle forming the faces
-    vector<vector<vector<int>>> tri_verts; // length 3 int vector listing the vertex indices
-    vector<vector<vector<int>>> tri_points; // points inside each triangle
-};
+#include "struct_list.h"
+#include "fast_rhs.h"
 
 void icos_init(icos_struct& icos, int levels, double radius) {
     vector<vector<double>> verts;
@@ -173,7 +166,6 @@ void point_assign(icos_struct& icos, vector<double>& point, vector<vector<int>>&
 }
 
 void points_assign(icos_struct& icos, vector<double>& points, vector<vector<int>>& point_locs, int point_count) {
-// void points_assign(vector<vector<vector<int>>>& tri_verts, vector<vector<double>>& verts, vector<double>& points, vector<vector<vector<int>>>& tri_points, vector<vector<int>>& point_locs, int levels, int point_count) { // finds which icosahedron triangle each dynamics point is in
     vector<vector<vector<int>>> tri_points (icos.levels);
     icos.tri_points = tri_points;
     vector<double> point;

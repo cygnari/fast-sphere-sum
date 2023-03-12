@@ -341,24 +341,21 @@ void read_points(int point_count, int tri_count, vector<double>& curr_state, vec
 }
 
 void area_init(vector<double>& curr_state, vector<double>& area, vector<vector<int>>& triangles, int tri_count) {
-  int iv1, iv2, iv3;
-  double curr_area;
-  vector<double> v1, v2, v3;
-  for (int i = 0; i < tri_count; i++) {
-      // cout << i << endl;
-      iv1 = triangles[i][0];
-      iv2 = triangles[i][1];
-      iv3 = triangles[i][2];
-      // cout << iv1 << " " << iv2 << " " << iv3 << endl;
-      v1 = slice(curr_state, 5 * iv1, 1, 3);
-      v2 = slice(curr_state, 5 * iv2, 1, 3);
-      v3 = slice(curr_state, 5 * iv3, 1, 3);
-      curr_area = sphere_tri_area(v1, v2, v3, 1);
-      area[iv1] += curr_area / 3.0;
-      area[iv2] += curr_area / 3.0;
-      area[iv3] += curr_area / 3.0;
-      // cout << iv1 << endl;
-  }
+    int iv1, iv2, iv3;
+    double curr_area;
+    vector<double> v1, v2, v3;
+    for (int i = 0; i < tri_count; i++) {
+        iv1 = triangles[i][0];
+        iv2 = triangles[i][1];
+        iv3 = triangles[i][2];
+        v1 = slice(curr_state, 5 * iv1, 1, 3);
+        v2 = slice(curr_state, 5 * iv2, 1, 3);
+        v3 = slice(curr_state, 5 * iv3, 1, 3);
+        curr_area = sphere_tri_area(v1, v2, v3, 1);
+        area[iv1] += curr_area / 3.0;
+        area[iv2] += curr_area / 3.0;
+        area[iv3] += curr_area / 3.0;
+    }
 }
 
 #endif

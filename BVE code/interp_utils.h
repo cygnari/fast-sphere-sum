@@ -7,21 +7,13 @@
 #include <queue>
 #include <chrono>
 #include <Accelerate/Accelerate.h>
-
-struct interp_struct {
-    int degree;
-    int point_count;
-    int info;
-    vector<double> matrix;
-    vector<vector<double>> interp_points;
-    int ipiv[];
-};
+#include "struct_list.h"
 
 void __attribute__((optnone)) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix, local
 // void __attribute__((optimize(0))) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix, on GL
     double delta_x = 1.0 / degree;
     int index;
-    double a, b, c, d;
+    double a, b, c;
     for (int i = 0; i < degree + 1; i++) {
         a = 1 - i * delta_x;
         for (int j = 0; j < i + 1; j++) {
@@ -55,7 +47,6 @@ void interp_mat_init(vector<double>& mat, vector<vector<double>>& points, int de
 }
 
 double interp_eval(vector<double>& alphas, double s, double t, int degree) { // evaluate interpolation polynomial with coefficients alpha and barycentric point (s, t)
-    // return alphas[0] + alphas[1] * s + alphas[2] * t + alphas[3] * s * t + alphas[4] * s * s + alphas[5] * t * t;
     double accum = 0;
     int index;
     for (int i = 0; i < degree + 1; i++) {
@@ -73,9 +64,10 @@ interp_struct interp_init(int degree) {
     interp1.point_count = (degree + 1) * (degree + 2) / 2;
     interp1.interp_points = vector<vector<double>> (interp1.point_count, vector<double> (3, 0));
     interp1.matrix = vector<double> (interp1.point_count * interp1.point_count, 0);
+    interp1.ipiv = vector<int> (interp1.point_count, 0);
     fekete_init(interp1.interp_points, degree);
     interp_mat_init(interp1.matrix, interp1.interp_points, degree, interp1.point_count);
-    dgetrf_(&interp1.point_count, &interp1.point_count, &*interp1.matrix.begin(), &interp1.point_count, interp1.ipiv, &interp1.info);
+    dgetrf_(&interp1.point_count, &interp1.point_count, &*interp1.matrix.begin(), &interp1.point_count, &*interp1.ipiv.begin(), &interp1.info);
     if (interp1.info > 0) {
         cout << "dgetrf: " << interp1.info << endl;
     }
