@@ -358,4 +358,13 @@ void area_init(vector<double>& curr_state, vector<double>& area, vector<vector<i
     }
 }
 
+void project_points(vector<double>& curr_state, int point_count) {
+    vector<double> projected;
+    for (int i = 0; i < point_count; i++) {
+        projected = slice(curr_state, 5 * i, 1, 3);
+        project_to_sphere(projected, 1.0);
+        for (int j = 0;j < 3; j++) curr_state[5 * i + j] = projected[j];
+    }
+}
+
 #endif

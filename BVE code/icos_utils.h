@@ -128,12 +128,16 @@ void icos_init(icos_struct& icos, int levels, double radius) {
     icos.verts = verts;
     icos.tri_info = tri_info;
     icos.tri_verts = tri_verts;
+
+    // icos.point_locs (levels, vector<int> (config1.point_count, 0));
 }
 
-icos_struct icosahedron_init(int levels, double radius) {
+icos_struct icosahedron_init(int levels, double radius, run_config config1) {
     icos_struct icos1;
     icos1.levels = levels;
     icos1.radius = radius;
+    vector<vector<int>> point_locs (levels, vector<int> (config1.point_count, 0));
+    icos1.point_locs = point_locs;
     icos_init(icos1, levels, radius);
     return icos1;
 }

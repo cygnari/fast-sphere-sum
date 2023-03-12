@@ -229,9 +229,9 @@ void cp(vector<double>& modify, vector<double>& curr_state, vector<double>& area
         point_index = icos1.tri_points[interact.lev_target][interact.curr_target][i];
         target_particle = slice(curr_state, 5 * point_index, 1, 3);
         bary_cord = barycoords(v1, v2, v3, target_particle);
-        modify[5 * i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], interp1.degree);
-        modify[5 * i + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], interp1.degree);
-        modify[5 * i + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], interp1.degree);
+        modify[5 * point_index] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], interp1.degree);
+        modify[5 * point_index + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], interp1.degree);
+        modify[5 * point_index + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], interp1.degree);
     }
 }
 

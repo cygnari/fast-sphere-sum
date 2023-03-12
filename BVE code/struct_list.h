@@ -19,6 +19,7 @@ struct icos_struct {
     vector<vector<vector<int>>> tri_verts; // length 3 int vector listing the vertex indices
     vector<vector<vector<int>>> tri_points; // points inside each triangle
     vector<interaction_pair> interactions; // interactions
+    vector<vector<int>> point_locs; // triangle each point is in
 };
 
 struct interp_struct {
@@ -30,14 +31,28 @@ struct interp_struct {
     vector<int> ipiv;
 };
 
+struct mpi_struct {
+    int mpi_ranks; // total processors
+    int rank; // current processor ID
+    int particle_lb; // even division of particles
+    int particle_ub;
+    int interact_lb; // even division of fast interactions
+    int interact_ub;
+};
+
 struct run_config {
     bool use_mpi = false;
     bool use_amr = false;
     bool use_remesh = false;
     bool use_fast = false;
+    bool testing = false;
     int mpi_ranks = 1;
     int point_count;
+    int many_count;
+    int levels = 1;
     double radius;
+    double end_time;
+    double theta;
     string init_cond;
     icos_struct icos;
     interp_struct interp;

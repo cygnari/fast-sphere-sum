@@ -29,11 +29,15 @@ int main(int argc, char** argv) { // run the dynamics
     run_config config1 = config_init(argc, argv, 1.0);
 
     double delta_t = 0.01; // time step in days
-    double end_t = 3.0; //end time in days
+    // double end_t = 3.0; //end time in days
+    // double end_t = 1.0;
     int old_point_count; // previous number of points if AMR is being used
     int tri_count = 2 * (config1.point_count - 2); // number of triangle faces
-    // int time_steps = end_t / delta_t; // number of time steps, for real runs
-    int time_steps = 1; // testing configuration
+    int time_steps;
+    if (config1.testing) time_steps = 1;
+    else time_steps = config1.end_time / delta_t;
+    // int time_steps = config1.end_time / delta_t; // number of time steps, for real runs
+    // int time_steps = 1; // testing configuration
     double omega = 2 * M_PI; // coriolis factor
     // double radius = 1.0; // radius of the sphere
 
@@ -62,19 +66,21 @@ int main(int argc, char** argv) { // run the dynamics
 
 
     if (config1.use_fast) { // fast summation init
-        int icos_levels = 2; // how much to refine the matrix
+        // int icos_levels = 3; // how much to refine the matrix
         double theta = 0.7; // cluster acceptance threshold
         int many_count = 10; // cluster acceptance count
         int degree = 2; // degree of interpolation for clusters
-        vector<vector<int>> point_locs (icos_levels, vector<int> (config1.point_count, 0)); // triangle each point is in
+        vector<vector<int>> point_locs (config1.levels, vector<int> (config1.point_count, 0)); // triangle each point is in
         icos_struct icos1;
         interp_struct interp1;
-        icos1 = icosahedron_init(icos_levels, config1.radius);
+        icos1 = icosahedron_init(config1.levels, config1.radius, config1);
         interp1 = interp_init(degree);
         points_assign(icos1, curr_state, point_locs, config1.point_count);
         tree_traverse(icos1.interactions, icos1, theta, many_count);
         config1.icos = icos1;
         config1.interp = interp1;
+        config1.many_count = many_count;
+        config1.theta = theta;
     }
 
     if (config1.use_amr) { // initialize for amr
@@ -106,7 +112,9 @@ int main(int argc, char** argv) { // run the dynamics
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
     string out_config = to_string(config1.point_count) + "_" + config1.init_cond + "_"; // point count, configuration
-    if (config1.use_fast) out_config += "fast";
+    if (config1.use_fast) {
+        out_config += "fast_" + to_string(config1.levels);
+    }
     else out_config += "direct";
     if (config1.use_amr) out_config += "_amr";
     if (config1.use_mpi) out_config += "_mpi";
@@ -135,26 +143,34 @@ int main(int argc, char** argv) { // run the dynamics
         // BVE_ffunc(c_1, curr_state, curr_time, delta_t, omega, area, point_count);
         // rhs_func(c_1, curr_state, area, omega, point_count, argv[1][0]);
         rhs_func(c_1, curr_state, area, omega, config1);
-        cout << "here 1" << endl;
         intermediate_1 = c_1;
-        cout << "here 2" << endl;
         scalar_mult(intermediate_1, delta_t / 2);
-        cout << "here 3" << endl;
         vec_add(intermediate_1, curr_state);
-        cout << "here 4" << endl;
+        // points_assign(config1.icos, intermediate_1, config1.icos.point_locs, config1.point_count);
+        // tree_traverse(config1.icos.interactions, config1.icos, config1.theta, config1.many_count);
+        // cout << "here" << endl;
         // cout << " state inter1 " << intermediate_1[5 * 1281] << endl;
         // BVE_ffunc(c_2, intermediate_1, curr_time + delta_t / 2, delta_t, omega, area, point_count);
+        project_points(intermediate_1, config1.point_count);
         rhs_func(c_2, intermediate_1, area, omega, config1);
-        cout << "here 5" << endl;
+        // cout << "here" << endl;
         intermediate_2 = c_2;
         scalar_mult(intermediate_2, delta_t / 2);
         vec_add(intermediate_2, curr_state);
+        // cout << "here" << endl;
+        // points_assign(config1.icos, intermediate_2, config1.icos.point_locs, config1.point_count);
+        // tree_traverse(config1.icos.interactions, config1.icos, config1.theta, config1.many_count);
+        // cout << "here" << endl;
         // BVE_ffunc(c_3, intermediate_2, curr_time + delta_t / 2, delta_t, omega, area, point_count);
+        project_points(intermediate_2, config1.point_count);
         rhs_func(c_3, intermediate_2, area, omega, config1);
         intermediate_3 = c_3;
         scalar_mult(intermediate_3, delta_t);
         vec_add(intermediate_3, curr_state);
+        // points_assign(config1.icos, intermediate_3, config1.icos.point_locs, config1.point_count);
+        // tree_traverse(config1.icos.interactions, config1.icos, config1.theta, config1.many_count);
         // BVE_ffunc(c_4, intermediate_3, curr_time + delta_t, delta_t, omega, area, point_count);
+        project_points(intermediate_3, config1.point_count);
         rhs_func(c_4, intermediate_3, area, omega, config1);
         c1234 = c_1;
         scalar_mult(c_2, 2);
@@ -163,18 +179,20 @@ int main(int argc, char** argv) { // run the dynamics
         vec_add(c1234, c_3);
         vec_add(c1234, c_4);
         scalar_mult(c1234, delta_t / 6);
-        cout << "here 6" << endl;
+        // project_points(curr_state, config1.point_count);
         if (config1.use_remesh) {
             vec_add(c1234, curr_state);
+            project_points(c1234, config1.point_count);
             regrid_points2(c1234, curr_state, triangles, vert_tris, config1.point_count, tri_count, omega, 0, config1.point_count, 0); // regrids points so that they are regular, modifies curr_state
         } else vec_add(curr_state, c1234);
         // state = amr(curr_state, triangles, vert_tris, area, parent_verts, tri_count, point_count, max_points);
         // point_count = state[1];
         // tri_count = state[0];
+        project_points(curr_state, config1.point_count);
         for (int i = 0; i < config1.point_count; i++) {
-            vector<double> projected = slice(curr_state, 5 * i, 1, 3);
-            project_to_sphere(projected, 1);
-            for (int j = 0; j < 3; j++) curr_state[5 * i + j] = projected[j]; // reproject points to surface of sphere
+            // vector<double> projected = slice(curr_state, 5 * i, 1, 3);
+            // project_to_sphere(projected, 1);
+            // for (int j = 0; j < 3; j++) curr_state[5 * i + j] = projected[j]; // reproject points to surface of sphere
             write_out1 << curr_state[5 * i] << "," << curr_state[5 * i + 1] << "," << curr_state[5 * i + 2] << "," << curr_state[5 * i + 3] << "," << curr_state[5 * i + 4] << "," << area[i] << "\n"; // write current state
         }
         write_out2 << config1.point_count << "\n";

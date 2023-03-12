@@ -72,7 +72,7 @@ void regrid_point(vector<double>& curr_state, vector<double>& target_points, vec
             }
         }
     }
-    // cout << "success: " << success << " failure: " << failure << " bad: " << bad << endl;
+    cout << "success: " << success << " failure: " << failure << " bad: " << bad << endl;
     // cout << "success: " << success << " failure: " << failure << " bad: " << bad << " ID " << ID << endl;
 }
 
@@ -135,7 +135,7 @@ void regrid_points2(vector<double>& curr_state, vector<double>& target_points, v
             bad += 1;
         }
     }
-    // cout << "success: " << success << " failure: " << failure << " bad: " << bad << endl;
+    cout << "success: " << success << " failure: " << failure << " bad: " << bad << endl;
     // cout << "success: " << success << " failure: " << failure << " bad: " << bad << " ID " << ID << endl;
 }
 

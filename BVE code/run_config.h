@@ -7,7 +7,7 @@ run_config config_init(int argc, char** argv, double radius) {
     int opt;
     run_config config1;
     config1.radius = radius;
-    while ((opt = getopt(argc, argv, "marfi:c:")) != -1) {
+    while ((opt = getopt(argc, argv, "marfi:c:t:l:x")) != -1) {
         switch (opt) {
             case 'm':
                 config1.use_mpi = true;
@@ -26,6 +26,15 @@ run_config config_init(int argc, char** argv, double radius) {
                 break;
             case 'c':
                 config1.point_count = stoi(optarg);
+                break;
+            case 't':
+                config1.end_time = stoi(optarg);
+                break;
+            case 'l':
+                config1.levels = stoi(optarg);
+                break;
+            case 'x':
+                config1.testing = true;
                 break;
         }
     }

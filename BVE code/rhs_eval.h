@@ -37,13 +37,14 @@ void rhs_fast_sum(vector<double>& modify, vector<double>& curr_state, vector<dou
         // cout << interactions[i].type << endl;
         if (interactions[i].type == "pp") pp(modify, curr_state, area, icos1, interactions[i]);
         else if (interactions[i].type == "cp") cp(modify, curr_state, area, icos1, interp1, interactions[i]);
-        else if (interactions[i].type == "pc") pc(modify, curr_state, area, icos1, interp1, interactions[i]);
-        else cc(modify, curr_state, area, icos1, interp1, interactions[i]);
+        // else if (interactions[i].type == "pc") pc(modify, curr_state, area, icos1, interp1, interactions[i]);
+        else if (interactions[i].type == "pc") pp(modify, curr_state, area, icos1, interactions[i]);
+        // else cc(modify, curr_state, area, icos1, interp1, interactions[i]);
+        else cp(modify, curr_state, area, icos1, interp1, interactions[i]);
     }
     scalar_mult(modify, -1.0 / (4.0 * M_PI));
     for (int i = 0; i < points; i++) modify[5 * i + 3] = -2 * omega * modify[5 * i + 2];
 }
-
 
 void rhs_func(vector<double>& modify, vector<double>& curr_state, vector<double>& area, double omega, run_config config1) {
     fill(modify.begin(), modify.end(), 0);
