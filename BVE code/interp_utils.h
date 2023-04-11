@@ -58,20 +58,20 @@ double interp_eval(vector<double>& alphas, double s, double t, int degree) { // 
     return accum;
 }
 
-interp_struct interp_init(int degree) {
-    interp_struct interp1;
-    interp1.degree = degree;
-    interp1.point_count = (degree + 1) * (degree + 2) / 2;
-    interp1.interp_points = vector<vector<double>> (interp1.point_count, vector<double> (3, 0));
-    interp1.matrix = vector<double> (interp1.point_count * interp1.point_count, 0);
-    interp1.ipiv = vector<int> (interp1.point_count, 0);
-    fekete_init(interp1.interp_points, degree);
-    interp_mat_init(interp1.matrix, interp1.interp_points, degree, interp1.point_count);
-    dgetrf_(&interp1.point_count, &interp1.point_count, &*interp1.matrix.begin(), &interp1.point_count, &*interp1.ipiv.begin(), &interp1.info);
-    if (interp1.info > 0) {
-        cout << "dgetrf: " << interp1.info << endl;
+void interp_init(run_information& config1) {
+    // interp_struct interp1;
+    // config1.degree = degree;
+    config1.interp_count = (config1.degree + 1) * (config1.degree + 2) / 2;
+    config1.interp_points = vector<vector<double>> (config1.interp_count, vector<double> (3, 0));
+    config1.interp_matrix = vector<double> (config1.interp_count * config1.interp_count, 0);
+    config1.ipiv = vector<int> (config1.interp_count, 0);
+    fekete_init(config1.interp_points, config1.degree);
+    interp_mat_init(config1.interp_matrix, config1.interp_points, config1.degree, config1.interp_count);
+    dgetrf_(&config1.interp_count, &config1.interp_count, &*config1.interp_matrix.begin(), &config1.interp_count, &*config1.ipiv.begin(), &config1.info);
+    if (config1.info > 0) {
+        cout << "dgetrf: " << config1.info << endl;
     }
-    return interp1;
+    // return interp1;
 }
 
 #endif

@@ -10,6 +10,7 @@
 #include <Accelerate/Accelerate.h>
 #include <cassert>
 #include <algorithm>
+#include "struct_list.h"
 
 extern "C" {
     extern int dgesv_(int*,int*,double*,int*,int*,double*,int*,int*);
@@ -295,15 +296,15 @@ void replace(vector<int>& vals, int find, int replacement) { // replace find in 
     }
 }
 
-void read_points(int point_count, int tri_count, vector<double>& curr_state, vector<vector<int>>& vert_tris, vector<vector<int>>& triangles) {
-    ifstream file1("../" + to_string(point_count) + "points_rh4.csv"); // ifstream = input file stream
-    ifstream file2("../" + to_string(point_count) + "tris.csv");
-    ifstream file3("../" + to_string(point_count) + "vert_tris.csv");
-    ifstream file4("../" + to_string(point_count) + "vert_tri_count.csv");
+void read_points(run_information& config1, vector<double>& curr_state) {
+    ifstream file1("../" + to_string(config1.point_count) + "points_rh4.csv"); // ifstream = input file stream
+    ifstream file2("../" + to_string(config1.point_count) + "tris.csv");
+    ifstream file3("../" + to_string(config1.point_count) + "vert_tris.csv");
+    ifstream file4("../" + to_string(config1.point_count) + "vert_tri_count.csv");
     string line, word;
     int tri_counts;
 
-    for (int i = 0; i < point_count; i++) {
+    for (int i = 0; i < config1.point_count; i++) {
         getline(file1, line);
         stringstream str1(line);
         for (int j = 0; j < 4; j++) { // read in initial condition of each point
@@ -316,21 +317,21 @@ void read_points(int point_count, int tri_count, vector<double>& curr_state, vec
         getline(str4, word, ',');
         tri_counts = stod(word); // number of triangles each point borders
 
-        vert_tris[i] = vector<int> (tri_counts);
+        config1.amr_vert_tris[i] = vector<int> (tri_counts);
         getline(file3, line);
         stringstream str3(line);
-        for (int j = 0; j < tri_counts; j++) { // reads in each points adjacent triangles
+        for (int j = 0; j < tri_counts; j++) { // reads in each points' adjacent triangles
             getline(str3, word, ',');
-            vert_tris[i][j] = stod(word);
+            config1.amr_vert_tris[i][j] = stod(word);
         }
     }
 
-    for (int i = 0; i < tri_count; i++) { // reads in triangle vertex information
+    for (int i = 0; i < config1.tri_count; i++) { // reads in triangle vertex information
         getline(file2, line);
         stringstream str2(line);
         for (int j = 0; j < 3; j++) {
             getline(str2, word, ',');
-            triangles[i][j] = stod(word);
+            config1.dynamics_tris[i][j] = stod(word);
         }
     }
 
@@ -358,12 +359,15 @@ void area_init(vector<double>& curr_state, vector<double>& area, vector<vector<i
     }
 }
 
-void project_points(vector<double>& curr_state, int point_count) {
+void project_points(vector<double>& curr_state, int point_count, double omega) {
     vector<double> projected;
+    double delta_z;
     for (int i = 0; i < point_count; i++) {
         projected = slice(curr_state, 5 * i, 1, 3);
         project_to_sphere(projected, 1.0);
+        delta_z = projected[2] - curr_state[5 * i + 2];
         for (int j = 0;j < 3; j++) curr_state[5 * i + j] = projected[j];
+        curr_state[5 * i + 3] += -2 * omega * delta_z;
     }
 }
 

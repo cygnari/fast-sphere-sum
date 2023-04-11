@@ -12,7 +12,7 @@
 #include "struct_list.h"
 #include "fast_rhs.h"
 
-void icos_init(icos_struct& icos, int levels, double radius) {
+void icos_init(run_information& config1, int levels, double radius) {
     vector<vector<double>> verts;
     vector<vector<vector<double>>> tri_info;
     vector<vector<vector<int>>> tri_verts;
@@ -125,53 +125,53 @@ void icos_init(icos_struct& icos, int levels, double radius) {
             tri_info[i+1][4*j+3].push_back(tri_radius(v12, v31, v23, center));
         }
     }
-    icos.verts = verts;
-    icos.tri_info = tri_info;
-    icos.tri_verts = tri_verts;
+    config1.tree_verts = verts;
+    config1.tree_tri_info = tri_info;
+    config1.tree_tri_verts = tri_verts;
 
     // icos.point_locs (levels, vector<int> (config1.point_count, 0));
 }
 
-icos_struct icosahedron_init(int levels, double radius, run_config config1) {
-    icos_struct icos1;
-    icos1.levels = levels;
-    icos1.radius = radius;
-    vector<vector<int>> point_locs (levels, vector<int> (config1.point_count, 0));
-    icos1.point_locs = point_locs;
-    icos_init(icos1, levels, radius);
-    return icos1;
+void icosahedron_init(run_information& config1, double radius) {
+    // icos_struct icos1;
+    // config1.levels = levels;
+    config1.radius = radius;
+    vector<vector<int>> point_locs (config1.tree_levels, vector<int> (config1.point_count, 0));
+    config1.tree_point_locs = point_locs;
+    icos_init(config1, config1.tree_levels, config1.radius);
+    // return icos1;
 }
 
-void point_assign(icos_struct& icos, vector<double>& point, vector<vector<int>>& point_locs, int point_id) {
+void point_assign(run_information& config1, vector<double>& point, int point_id) {
     int iv1, iv2, iv3, lb, ub;
     vector<double> v1, v2, v3;
-    for (int i = 0; i < icos.levels; i++) {
+    for (int i = 0; i < config1.tree_levels; i++) {
         if (i > 0) {
-            lb = 4 * point_locs[i-1][point_id]; // utilize tree structure to minimize searching
+            lb = 4 * config1.tree_point_locs[i-1][point_id]; // utilize tree structure to minimize searching
             ub = lb + 4;
         } else {
             lb = 0;
             ub = 20;
         }
         for (int j = lb; j < ub; j++) {
-            iv1 = icos.tri_verts[i][j][0];
-            iv2 = icos.tri_verts[i][j][1];
-            iv3 = icos.tri_verts[i][j][2];
-            v1 = icos.verts[iv1];
-            v2 = icos.verts[iv2];
-            v3 = icos.verts[iv3];
+            iv1 = config1.tree_tri_verts[i][j][0];
+            iv2 = config1.tree_tri_verts[i][j][1];
+            iv3 = config1.tree_tri_verts[i][j][2];
+            v1 = config1.tree_verts[iv1];
+            v2 = config1.tree_verts[iv2];
+            v3 = config1.tree_verts[iv3];
             if (check_in_tri(v1, v2, v3, point)) {
-                point_locs[i][point_id] = j;
-                icos.tri_points[i][j].push_back(point_id);
+                config1.tree_point_locs[i][point_id] = j;
+                config1.tree_tri_points[i][j].push_back(point_id);
                 break;
             }
         }
     }
 }
 
-void points_assign(icos_struct& icos, vector<double>& points, vector<vector<int>>& point_locs, int point_count) {
-    vector<vector<vector<int>>> tri_points (icos.levels);
-    icos.tri_points = tri_points;
+void points_assign(run_information& config1, vector<double>& points) {
+    vector<vector<vector<int>>> tri_points (config1.tree_levels);
+    config1.tree_tri_points = tri_points;
     vector<double> point;
     // vector<double> v1, v2, v3, point;
     // int iv1, iv2, iv3, lb, ub;
@@ -179,52 +179,18 @@ void points_assign(icos_struct& icos, vector<double>& points, vector<vector<int>
     // tri_points.clear();
     // point_locs.push_back(vector<int> (point_count, 0));
     // icos.tri_points[0] = vector<vector<int>> (20);
-    for (int i = 0; i < icos.levels; i++) {
-        point_locs.push_back(vector<int> (point_count, 0));
-        icos.tri_points[i] = vector<vector<int>> (20 * pow(4, i));
+    for (int i = 0; i < config1.tree_levels; i++) {
+        // point_locs.push_back(vector<int> (point_count, 0));
+        config1.tree_tri_points[i] = vector<vector<int>> (20 * pow(4, i));
     }
-    for (int i = 0; i < point_count; i++) {
+    for (int i = 0; i < config1.point_count; i++) {
         point = slice(points, 5 * i, 1, 3);
-        point_assign(icos, point, point_locs, i);
+        point_assign(config1, point, i);
     }
-    // for (int i = 0; i < point_count; i++) { // finds the placement of each point in the initial icosahedron
-    //     point = slice(points, 5 * i, 1, 3);
-    //     for (int j = 0; j < 20; j++) {
-    //         iv1 = icos.tri_verts[0][j][0];
-    //         iv2 = icos.tri_verts[0][j][1];
-    //         iv3 = icos.tri_verts[0][j][2];
-    //         v1 = icos.verts[iv1];
-    //         v2 = icos.verts[iv2];
-    //         v3 = icos.verts[iv3];
-    //         if (check_in_tri(v1, v2, v3, point)) {
-    //             point_locs[0][i] = j;
-    //             icos.tri_points[0][j].push_back(i);
-    //             break;
-    //         }
-    //     }
-    // }
-    // for (int i = 1; i < icos.levels; i++) { // finds point loc in refined faces
-    //     // point_locs.push_back(vector<int> (point_count, 0));
-    //     // tri_points[i] = vector<vector<int>> (20 * pow(4, i));
-    //     for (int j = 0; j < point_count; j++) {
-    //         point = slice(points, 5 * j, 1, 3);
-    //         lb = 4 * point_locs[i-1][j]; // utilize tree structure to minimize searching
-    //         ub = lb + 4;
-    //         for (int k = lb; k < ub; k++) {
-    //             iv1 = icos.tri_verts[i][k][0];
-    //             iv2 = icos.tri_verts[i][k][1];
-    //             iv3 = icos.tri_verts[i][k][2];
-    //             v1 = icos.verts[iv1];
-    //             v2 = icos.verts[iv2];
-    //             v3 = icos.verts[iv3];
-    //             if (check_in_tri(v1, v2, v3, point)) {
-    //                 point_locs[i][j] = k;
-    //                 icos.tri_points[i][k].push_back(j);
-    //                 break;
-    //             }
-    //         }
-    //     }
-    // }
+}
+
+void dynamics_points_init(run_information& config1) {
+    // initialize the points 
 }
 
 #endif
