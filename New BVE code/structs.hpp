@@ -28,7 +28,8 @@ struct run_config {
     int dynamics_max_points; // maximum number of dynamics points
     int dynamics_initial_triangles; // initial number of dynamics triangles
     int dynamics_max_triangles; // maximum number of dynamics triangles
-    int dynamics_curr_point_count;
+    int dynamics_curr_point_count; // current number of points
+    int dynamics_curr_tri_count; // current number of triangles
 };
 
 struct interaction_pair {

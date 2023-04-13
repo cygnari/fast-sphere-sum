@@ -267,4 +267,11 @@ void area_init(vector<double>& curr_state, vector<double>& area, vector<vector<i
     }
 }
 
+int check_point_exist(vector<vector<int>>& parent_points, int point_count, int iv1, int iv2) {
+    for (int i = 0; i < point_count; i++) {
+        if ((parent_points[i][0] == iv1) and (parent_points[i][1] == iv2)) return i;
+    }
+    return -1;
+}
+
 #endif

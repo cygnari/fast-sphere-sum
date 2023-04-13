@@ -17,3 +17,5 @@
 *.mp4
 */plots-and-figures/
 */run-output/
+*New\_BVE\_Code/run-output
+*Old-vorticities
