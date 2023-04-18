@@ -186,6 +186,12 @@ bool check_in_tri(vector<double>& p1, vector<double>& p2, vector<double>& p3, ve
     else return false;
 }
 
+bool check_in_tri_thresh(vector<double>& p1, vector<double>& p2, vector<double>& p3, vector<double>& p, double threshold) { // checks if point p is in triangle
+    vector<double> bary_coord = barycoords(p1, p2, p3, p);
+    if ((bary_coord[0] >= threshold) and (bary_coord[1] >= threshold) and (bary_coord[2] >= threshold)) return true;
+    else return false;
+}
+
 double circum_poly(double a, double b, double c) { // polynomial for circumcenter
     return a * a + b * b - c * c;
 }
@@ -246,24 +252,6 @@ void replace(vector<int>& vals, int find, int replacement) { // replace find in 
             vals[i] = replacement;
             break;
         }
-    }
-}
-
-void area_init(vector<double>& curr_state, vector<double>& area, vector<vector<int>>& triangles, int tri_count) {
-    int iv1, iv2, iv3;
-    double curr_area;
-    vector<double> v1, v2, v3;
-    for (int i = 0; i < tri_count; i++) {
-        iv1 = triangles[i][0];
-        iv2 = triangles[i][1];
-        iv3 = triangles[i][2];
-        v1 = slice(curr_state, 5 * iv1, 1, 3);
-        v2 = slice(curr_state, 5 * iv2, 1, 3);
-        v3 = slice(curr_state, 5 * iv3, 1, 3);
-        curr_area = sphere_tri_area(v1, v2, v3, 1);
-        area[iv1] += curr_area / 3.0;
-        area[iv2] += curr_area / 3.0;
-        area[iv3] += curr_area / 3.0;
     }
 }
 

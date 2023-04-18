@@ -34,6 +34,10 @@ void read_run_config(string file_name, run_config& run_information) {
             if (stoi(word2) == 1) {
                 run_information.use_fast = true;
             }
+        } else if (word1 == "force_conservative") {
+            if (stoi(word2) == 1) {
+                run_information.use_caas = true;
+            }
         } else if (word1 == "radius") {
             run_information.radius = stod(word2);
         } else if (word1 == "end_time") {
@@ -42,8 +46,8 @@ void read_run_config(string file_name, run_config& run_information) {
             run_information.delta_t = stod(word2);
         } else if (word1 == "dynamics_levels_min") {
             run_information.dynamics_levels_min = stoi(word2);
-        } else if (word1 == "dynamics_levels_max") {
-            run_information.dynamics_levels_max = stoi(word2);
+        } else if (word1 == "amr_levels_max") {
+            run_information.dynamics_levels_max = stoi(word2) + run_information.dynamics_levels_min;
         } else if (word1 == "initial_vor_condition") {
             run_information.initial_vor_condition = word2;
         } else if (word1 == "fast_sum_cluster_thresh") {

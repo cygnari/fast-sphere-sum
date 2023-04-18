@@ -9,7 +9,7 @@
 #include <mpi.h>
 
 #include "general_utils.hpp"
-// #include "interp_utils.hpp"
+#include "interp_utils.hpp"
 #include "init_utils.hpp"
 #include "structs.hpp"
 #include "input_utils.hpp"
@@ -28,12 +28,20 @@ int main() {
     vector<double> dynamics_state; // list of points and other information in a flattened array
     vector<vector<vector<int>>> dynamics_triangles; // at level i, each entry is a vector which contains the 3 vertices and the refinement level of the triangle
     vector<vector<vector<int>>> dynamics_points_adj_triangles; // for point i, level j, the triangles it touches at that level
-    vector<vector<int>> dynamics_parent_triangles; // for triangle i, the triangle one level above that it comes from
-    vector<vector<int>> dynamics_child_triangles; // for triangle i, the four triangles coming from it
+    // vector<vector<int>> dynamics_parent_triangles; // for triangle i, the triangle one level above that it comes from
+    // vector<vector<int>> dynamics_child_triangles; // for triangle i, the four triangles coming from it
     vector<vector<int>> dynamics_points_parents; // for point i, the two points that it is the midpoint of
+    vector<vector<bool>> dynamics_triangles_is_leaf; // at level i, if triangle j is a leaf triangle
+
+    vector<double> c_1;
+    vector<double> c_2;
+    vector<double> c_3;
+    vector<double> c_4;
+    vector<double> c1234;
+    vector<double> inter_state;
 
     // dynamics_points_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_points_adj_triangles, dynamics_parent_triangles, dynamics_child_triangles, dynamics_points_parents);
-    dynamics_points_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_points_parents);
+    dynamics_points_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_points_parents, dynamics_triangles_is_leaf);
 
     vector<double> dynamics_areas (run_information.dynamics_initial_points, 0);
     area_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_areas); // finds areas for each point
@@ -62,41 +70,49 @@ int main() {
 
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
 
-    for (int t = 0; t < run_information.time_steps; t++ ) {
-        vector<double> c1234(run_information.info_per_point * run_information.dynamics_curr_point_count, 0);
-        vector<double> inter_state(run_information.info_per_point * run_information.dynamics_curr_point_count, 0);
-        vector<double> rhs_update(run_information.info_per_point * run_information.dynamics_curr_point_count, 0);
-        rhs_func(run_information, rhs_update, dynamics_state, dynamics_areas, omega); // RK4 k_1
-        c1234 = rhs_update; // k_1
-        inter_state = dynamics_state; // k_1
+    for (int t = 0; t < run_information.time_steps; t++ ) {  // progress the dynamics
+        c_1.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+        c_2.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+        c_3.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+        c_4.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+        c1234.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+        inter_state.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+        rhs_func(run_information, c_1, dynamics_state, dynamics_areas, omega); // RK4 k_1
+        inter_state = c_1; // k_1
         scalar_mult(inter_state, run_information.delta_t / 2.0); // delta_t/2*k1
-        vec_add(inter_state, rhs_update); // x+delta_t/2*k1
-        rhs_func(run_information, rhs_update, inter_state, dynamics_areas, omega); // RK4 k_2
-        inter_state = rhs_update; // k_2
-        scalar_mult(rhs_update, 2.0); // 2k_2
-        vec_add(c1234, rhs_update); // k_1 + 2k_2
+        vec_add(inter_state, dynamics_state); // x+delta_t/2*k1
+        project_points(run_information, inter_state, omega);
+        rhs_func(run_information, c_2, inter_state, dynamics_areas, omega); // RK4 k_2
+        inter_state = c_2; // k_2
         scalar_mult(inter_state, run_information.delta_t / 2.0); // delta_t/2 * k_2
         vec_add(inter_state, dynamics_state); // x+delta_t/2*k2
-        rhs_func(run_information, rhs_update, inter_state, dynamics_areas, omega); // RK4 k_3
-        inter_state = rhs_update; // k_3
-        scalar_mult(rhs_update, 2.0); // 2k_3
-        vec_add(c1234, rhs_update); // k_1 + 2k_2 + 2k_3
+        project_points(run_information, inter_state, omega);
+        rhs_func(run_information, c_3, inter_state, dynamics_areas, omega); // RK4 k_3
+        inter_state = c_3; // k_3
         scalar_mult(inter_state, run_information.delta_t); // delta_t * k_3
         vec_add(inter_state, dynamics_state); // x + delta_t * k_3
-        rhs_func(run_information, rhs_update, inter_state, dynamics_areas, omega); // RK4 k_4
-        vec_add(c1234, rhs_update); // k_1 + 2k_2 + 2k_3 + k_4
+        project_points(run_information, inter_state, omega);
+        rhs_func(run_information, c_4, inter_state, dynamics_areas, omega); // RK4 k_4
+        c1234 = c_1;
+        scalar_mult(c_2, 2);
+        scalar_mult(c_3, 2);
+        vec_add(c1234, c_2);
+        vec_add(c1234, c_3);
+        vec_add(c1234, c_4);
         scalar_mult(c1234, run_information.delta_t / 6.0); // RK4 update
-        vec_add(dynamics_state, c1234);
-
+        if (run_information.use_remesh) {
+            vec_add(c1234, dynamics_state);
+            project_points(run_information, c1234, omega);
+            remesh_points(run_information, dynamics_state, c1234, dynamics_triangles, dynamics_triangles_is_leaf);
+        } else {
+            vec_add(dynamics_state, c1234);
+            project_points(run_information, dynamics_state, omega);
+        }
         write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
-
-        // progress the dynamics
+        cout << t << endl;
     }
 
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
     cout << "time taken: " << chrono::duration_cast<chrono::microseconds>(end - begin).count() << " microseconds" << endl;
-    // cout << dynamics_state[0] << " " << dynamics_state[1] << " " <<  dynamics_state[2] << " " << dynamics_state[3] << endl;
-    // cout << run_information.dynamics_curr_point_count << endl;
-    // cout << run_information.dynamics_initial_points << endl;
     return 0;
 }

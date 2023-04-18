@@ -29,7 +29,7 @@ void rhs_direct_sum(run_config& run_information, vector<double>& modify, vector<
         // scalar_mult(pos_change, -1.0 / (4.0 * M_PI));
         // for (int j = 0; j < 3; j++) modify[5 * i + j] = pos_change[j];
         vector_copy(modify, pos_change, run_information.info_per_point * i, 3);
-        // modify[5 * i + 3] = -2 * omega * pos_change[2];
+        // modify[run_information.info_per_point * i + 3] = -2 * omega * pos_change[2];
     }
 }
 
@@ -42,6 +42,19 @@ void rhs_func(run_config& run_information, vector<double>& modify, vector<double
     }
     scalar_mult(modify, -1.0 / (4.0 * M_PI));
     for (int i = 0; i < run_information.dynamics_curr_point_count; i++) modify[run_information.info_per_point * i + 3] = -2 * omega * modify[run_information.info_per_point * i + 2];
+}
+
+void project_points(run_config& run_information, vector<double>& dynamics_state, double omega) {
+    vector<double> projected;
+    double delta_z;
+    for (int i = 0; i < run_information.dynamics_curr_point_count; i++) {
+        projected = slice(dynamics_state, run_information.info_per_point * i, 1, 3);
+        project_to_sphere(projected, run_information.radius);
+        delta_z = projected[2] - dynamics_state[run_information.info_per_point * i + 2];
+        for (int j = 0;j < 3; j++) dynamics_state[run_information.info_per_point * i + j] = projected[j];
+        // vector_copy(dynamics_state, projected, run_information.info_per_point * i, 3);
+        dynamics_state[run_information.info_per_point * i + 3] += -2 * omega * delta_z;
+    }
 }
 
 #endif
