@@ -15,6 +15,7 @@
 #include "input_utils.hpp"
 #include "io_utils.hpp"
 #include "rhs_utils.hpp"
+#include "conservation_fixer.hpp"
 
 using namespace std;
 
@@ -33,6 +34,10 @@ int main() {
     vector<vector<int>> dynamics_points_parents; // for point i, the two points that it is the midpoint of
     vector<vector<bool>> dynamics_triangles_is_leaf; // at level i, if triangle j is a leaf triangle
 
+    vector<double> qmins; // min value for absolute vorticity + each tracer
+    vector<double> qmaxs; // max values for absolute vorticity + each tracer
+    vector<double> target_mass; // initial surface integral of each tracer
+
     vector<double> c_1;
     vector<double> c_2;
     vector<double> c_3;
@@ -47,7 +52,8 @@ int main() {
     area_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_areas); // finds areas for each point
     vorticity_initialize(run_information, dynamics_state, dynamics_areas); // initializes vorticity values for each point
     tracer_initialize(run_information, dynamics_state); // initializes tracer values for each point
-
+    fixer_init(run_information, dynamics_state, dynamics_areas, qmins, qmaxs, target_mass, omega);
+    // cout << target_mass[1] << " " << qmins[1] << " " << qmaxs[1] << endl;
 
     string output_filename = to_string(run_information.dynamics_initial_points) + "_" + run_information.initial_vor_condition + "_";
     if (run_information.use_fast) {
@@ -56,6 +62,7 @@ int main() {
     if (run_information.use_amr) output_filename += "_amr";
     if (run_information.use_mpi) output_filename += "_mpi";
     if (run_information.use_remesh) output_filename += "_remesh";
+    if (run_information.use_fixer) output_filename += "_fixer";
     stringstream ss;
     int precision;
     if (run_information.end_time >= 1.0) precision = 0;
@@ -107,6 +114,9 @@ int main() {
         } else {
             vec_add(dynamics_state, c1234);
             project_points(run_information, dynamics_state, omega);
+        }
+        if (run_information.use_fixer) {
+            enforce_conservation(run_information, dynamics_state, dynamics_areas, qmins, qmaxs, target_mass, omega);
         }
         write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
         cout << t << endl;

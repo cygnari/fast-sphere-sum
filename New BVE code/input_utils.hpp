@@ -36,7 +36,7 @@ void read_run_config(string file_name, run_config& run_information) {
             }
         } else if (word1 == "force_conservative") {
             if (stoi(word2) == 1) {
-                run_information.use_caas = true;
+                run_information.use_fixer = true;
             }
         } else if (word1 == "radius") {
             run_information.radius = stod(word2);
@@ -68,6 +68,7 @@ void read_run_config(string file_name, run_config& run_information) {
             run_information.dynamics_max_triangles = 20 * pow(4, run_information.dynamics_levels_max - 1);
             run_information.dynamics_curr_point_count = run_information.dynamics_initial_points;
             run_information.dynamics_curr_tri_count = run_information.dynamics_initial_triangles;
+            run_information.tracer_count = run_information.info_per_point - 4;
             return;
         }
     }

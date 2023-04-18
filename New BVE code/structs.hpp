@@ -9,7 +9,7 @@ struct run_config {
     bool use_amr = false;
     bool use_remesh = false;
     bool use_fast = false;
-    bool use_caas = false;
+    bool use_fixer = false;
     double radius = 1.0;
     double end_time;
     double delta_t; // time step size
@@ -31,6 +31,7 @@ struct run_config {
     int dynamics_max_triangles; // maximum number of dynamics triangles
     int dynamics_curr_point_count; // current number of points
     int dynamics_curr_tri_count; // current number of triangles
+    int tracer_count; // number of tracers
 };
 
 struct interaction_pair {

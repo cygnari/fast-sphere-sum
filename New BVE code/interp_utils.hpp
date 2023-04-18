@@ -89,7 +89,7 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
     vector<vector<double>> points (6, vector<double> (3, 0));
     vector<double> interp_matrix (36, 0);
     vector<int> poss_tris;
-    vector<double> tracer_values (6 * (run_information.info_per_point - 4), 0);
+    vector<double> tracer_values (6 * (run_information.tracer_count), 0);
     vector<double> curr_alphas;
     // double curr_vor;
     int iv1, iv2, iv3, iv4, iv5, iv6, curr_level, tri_loc, super_tri_loc, lb, ub;
@@ -213,10 +213,7 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
         vorticity_values[3] = dynamics_state[run_information.info_per_point * iv4 + 3];
         vorticity_values[4] = dynamics_state[run_information.info_per_point * iv5 + 3];
         vorticity_values[5] = dynamics_state[run_information.info_per_point * iv6 + 3];
-        for (int j = 0; j < run_information.info_per_point - 4; j++) {
-            // for (int k = 0; k < 6; k++) {
-            //     tracer_values[6 * j + k] = dynamics_state[]
-            // }
+        for (int j = 0; j < run_information.tracer_count; j++) {
             tracer_values[6 * j] = dynamics_state[run_information.info_per_point * iv1 + 4 + j];
             tracer_values[6 * j + 1] = dynamics_state[run_information.info_per_point * iv2 + 4 + j];
             tracer_values[6 * j + 2] = dynamics_state[run_information.info_per_point * iv3 + 4 + j];
@@ -224,27 +221,15 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
             tracer_values[6 * j + 4] = dynamics_state[run_information.info_per_point * iv5 + 4 + j];
             tracer_values[6 * j + 5] = dynamics_state[run_information.info_per_point * iv6 + 4 + j];
         }
-        // cout << "here" << endl;
+
         interp_mat_init(interp_matrix, points, 2, 6);
-        // cout << "here2" << endl;
-        // for (int i = 0; i < interp_matrix.size(); i++) cout << interp_matrix[i] << " ";
-        // for (int j = 0; j < 6; j++) {
-        //     for (int k = 0; k < 6; k++) {
-        //         cout << interp_matrix[j+6*k] << " ";
-        //     }
-        //     cout << endl;
-        // }
-        // cout << endl;
-        // cout << interp_matrix.size() << " " << vorticity_values.size() << endl;
-        // dgetrs_(&trans, &Num, &nrhs, &*interp_matrix.begin(), &Num, &*ipiv, &*vorticity_values.begin(), &Num, &info);
         dgetrf_(&Num, &Num, &*interp_matrix.begin(), &Num, &*ipiv.begin(), &info);
         dgetrs_(&trans, &Num, &nrhs, &*interp_matrix.begin(), &Num, &*ipiv.begin(), &*vorticity_values.begin(), &Num, &info);
-        nrhs = run_information.info_per_point - 4;
+        nrhs = run_information.tracer_count;
         dgetrs_(&trans, &Num, &nrhs, &*interp_matrix.begin(), &Num, &*ipiv.begin(), &*tracer_values.begin(), &Num, &info);
-        // dgesv_(&Num, &nrhs, &*interp_matrix.begin(), &Num, &*ipiv.begin(), &*vorticity_values.begin(), &Num, &info);
         bary_cords = barycoords(v1, v2, v3, curr_target);
         target_points[run_information.info_per_point * i + 3] = interp_eval(vorticity_values, bary_cords[0], bary_cords[1], 2);
-        for (int j = 0; j < run_information.info_per_point - 4; j++) {
+        for (int j = 0; j < run_information.tracer_count; j++) {
             curr_alphas = slice(tracer_values, 6 * j, 1, 6);
             target_points[run_information.info_per_point * i + 4 + j] = interp_eval(curr_alphas, bary_cords[0], bary_cords[1], 2);
         }

@@ -192,4 +192,23 @@ void tracer_initialize(run_config& run_information, vector<double>& dynamics_sta
     }
 }
 
+void fixer_init(run_config& run_information, vector<double>& dynamics_state, vector<double>& dynamics_areas, vector<double>& qmins, vector<double>& qmaxs, vector<double>& target_mass, double omega) {
+    double abs_vor;
+    qmins.resize(run_information.tracer_count + 1, INT_MAX); // vorticity + tracers
+    qmaxs.resize(run_information.tracer_count + 1, INT_MIN); // voriticty + tracers
+    target_mass.resize(run_information.tracer_count + 1, 0);
+    for (int i = 0; i < run_information.tracer_count; i++) {
+        for (int j = 0; j < run_information.dynamics_initial_points; j++) {
+            qmins[i + 1] = min(dynamics_state[run_information.info_per_point * j + i + 4], qmins[i + 1]);
+            qmaxs[i + 1] = max(dynamics_state[run_information.info_per_point * j + i + 4], qmaxs[i + 1]);
+            target_mass[i + 1] += dynamics_areas[j] * dynamics_state[run_information.info_per_point * j + i + 4];
+        }
+    }
+    for (int i = 0; i < run_information.dynamics_initial_points; i++) {
+        abs_vor = dynamics_state[run_information.info_per_point * i + 3] + 2 * omega * dynamics_state[run_information.info_per_point * i + 2];
+        qmins[0] = min(abs_vor, qmins[0]); // min and max of absolute vorticity
+        qmaxs[0] = max(abs_vor, qmaxs[0]); // total vorticity is 0
+    }
+}
+
 #endif
