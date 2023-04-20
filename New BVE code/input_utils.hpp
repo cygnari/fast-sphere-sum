@@ -54,6 +54,9 @@ void read_run_config(string file_name, run_config& run_information) {
             run_information.fast_sum_cluster_thresh = stoi(word2);
         } else if (word1 == "fast_sum_tree_levels") {
             run_information.fast_sum_tree_levels = stoi(word2);
+            if (run_information.fast_sum_tree_levels == -1) {
+                run_information.fast_sum_tree_levels = run_information.dynamics_levels_min - 3;
+            }
         } else if (word1 == "fast_sum_theta") {
             run_information.fast_sum_theta = stod(word2);
         } else if (word1 == "interp_degree") {
@@ -69,6 +72,7 @@ void read_run_config(string file_name, run_config& run_information) {
             run_information.dynamics_curr_point_count = run_information.dynamics_initial_points;
             run_information.dynamics_curr_tri_count = run_information.dynamics_initial_triangles;
             run_information.tracer_count = run_information.info_per_point - 4;
+            run_information.interp_point_count = int((1 + run_information.interp_degree) * (2 + run_information.interp_degree) / 2);
             return;
         }
     }

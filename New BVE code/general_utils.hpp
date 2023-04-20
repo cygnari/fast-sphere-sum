@@ -128,6 +128,10 @@ double great_circ_dist(vector<double>& p1, vector<double>& p2, double radius) {
     return theta * radius;
 }
 
+double great_circ_dist_sph(double lat1, double lat2, double lon1, double lon2, double radius) {
+    return radius * acos(min(1.0, max(-1.0, sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon2 - lon1))));
+}
+
 double sphere_tri_area(vector<double>& p1, vector<double>& p2, vector<double>& p3, double radius) {
     // finds the area of a spherical triangle
     assert (p1.size() == p2.size());
@@ -260,6 +264,13 @@ int check_point_exist(vector<vector<int>>& parent_points, int point_count, int i
         if ((parent_points[i][0] == iv1) and (parent_points[i][1] == iv2)) return i;
     }
     return -1;
+}
+
+int check_in_vec(vector<vector<double>>& x, vector<double>& y) { // checks if length 3 vector y is in vector of vectors x
+    for (int i = 0; i < x.size(); i++) {
+        if ((x[i][0] == y[0]) and (x[i][1] == y[1]) and (x[i][2] == y[2])) return i; // index where y is in x
+    }
+    return -1; // -1 if y not in x
 }
 
 #endif
