@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cassert>
 #include <mpi.h>
+#include <cstdio>
 
 #include "general_utils.hpp"
 #include "interp_utils.hpp"
@@ -95,7 +96,18 @@ int main() {
     ofstream write_out1("./run-output/output_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
     ofstream write_out2("./run-output/point_counts_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
 
-    write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
+    if (run_information.write_output) {
+        // ofstream write_out1("./run-output/output_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
+        // ofstream write_out2("./run-output/point_counts_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
+        write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
+    }
+    if (not run_information.write_output) {
+        int info;
+        string name1 = "./run-output/output_" + output_filename + ".csv";
+        string name2 = "./run-output/point_counts_" + output_filename + ".csv";
+        info = remove(name1.c_str());
+        info = remove(name2.c_str());
+    }
 
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
     // cout << "here 2" << endl;
@@ -151,7 +163,9 @@ int main() {
             enforce_conservation(run_information, dynamics_state, dynamics_areas, qmins, qmaxs, target_mass, omega);
         }
         // cout << "here 4" << endl;
-        write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
+        if (run_information.write_output) {
+            write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
+        }
         cout << t << endl;
     }
 

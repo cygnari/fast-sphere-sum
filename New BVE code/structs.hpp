@@ -10,6 +10,7 @@ struct run_config {
     bool use_remesh = false;
     bool use_fast = false;
     bool use_fixer = false;
+    bool write_output = false;
     double radius = 1.0;
     double end_time;
     double delta_t; // time step size

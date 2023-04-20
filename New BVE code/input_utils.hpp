@@ -38,6 +38,10 @@ void read_run_config(string file_name, run_config& run_information) {
             if (stoi(word2) == 1) {
                 run_information.use_fixer = true;
             }
+        } else if (word1 == "write_output") {
+            if (stoi(word2) == 1) {
+                run_information.write_output = true;
+            }
         } else if (word1 == "radius") {
             run_information.radius = stod(word2);
         } else if (word1 == "end_time") {

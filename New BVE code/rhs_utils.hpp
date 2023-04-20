@@ -65,14 +65,14 @@ void rhs_func(run_config& run_information, vector<double>& modify, vector<double
 
 void project_points(run_config& run_information, vector<double>& dynamics_state, double omega) {
     vector<double> projected;
-    double delta_z;
+    // double delta_z;
     for (int i = 0; i < run_information.dynamics_curr_point_count; i++) {
         projected = slice(dynamics_state, run_information.info_per_point * i, 1, 3);
         project_to_sphere(projected, run_information.radius);
-        delta_z = projected[2] - dynamics_state[run_information.info_per_point * i + 2];
+        // delta_z = projected[2] - dynamics_state[run_information.info_per_point * i + 2];
         for (int j = 0;j < 3; j++) dynamics_state[run_information.info_per_point * i + j] = projected[j];
         // vector_copy(dynamics_state, projected, run_information.info_per_point * i, 3);
-        dynamics_state[run_information.info_per_point * i + 3] += -2 * omega * delta_z;
+        // dynamics_state[run_information.info_per_point * i + 3] += -2 * omega * delta_z;
     }
 }
 
