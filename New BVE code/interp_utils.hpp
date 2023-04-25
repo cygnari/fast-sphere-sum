@@ -70,17 +70,22 @@ double interp_eval(vector<double>& alphas, double s, double t, int degree) { // 
     return accum;
 }
 
-void biquadratic_interp(run_config& run_information, vector<double>& target_point, int target, int iv1, int iv2, int iv3, int iv4, int iv5, int iv6,
-        vector<double>& target_state, vector<double>& dynamics_state) {
+vector<double> biquadratic_interp(run_config& run_information, vector<double>& target_point, int iv1, int iv2, int iv3, int iv4,
+        int iv5, int iv6, vector<double>& dynamics_state) {
 
     vector<double> v1, v2, v3, v4, v5, v6, curr_alphas, bary_cords;
     vector<vector<double>> points(6, vector<double> (3, 0));
     vector<double> vorticity_values (6, 0);
+    vector<double> output_values (run_information.info_per_point);
     vector<double> tracer_values (6 * run_information.tracer_count, 0);
     vector<double> interp_matrix (36, 0);
     vector<int> ipiv (6, 0);
     char trans = 'N';
     int Num = 6, nrhs, info;
+
+    output_values[0] = target_point[0];
+    output_values[1] = target_point[1];
+    output_values[2] = target_point[2];
 
     v1 = slice(dynamics_state, run_information.info_per_point * iv1, 1, 3);
     v2 = slice(dynamics_state, run_information.info_per_point * iv2, 1, 3);
@@ -116,40 +121,40 @@ void biquadratic_interp(run_config& run_information, vector<double>& target_poin
     dgetrf_(&Num, &Num, &*interp_matrix.begin(), &Num, &*ipiv.begin(), &info);
     nrhs = 1;
     dgetrs_(&trans, &Num, &nrhs, &*interp_matrix.begin(), &Num, &*ipiv.begin(), &*vorticity_values.begin(), &Num, &info);
+    if (info > 0) cout << "biquadratic_interp: " << info << endl;
     // cout << "here 1 4" << endl;
     nrhs = run_information.tracer_count;
     dgetrs_(&trans, &Num, &nrhs, &*interp_matrix.begin(), &Num, &*ipiv.begin(), &*tracer_values.begin(), &Num, &info);
-
+    if (info > 0) cout << "biquadratic_interp: " << info << endl;
     bary_cords = barycoords(v1, v2, v3, target_point);
-    target_state[run_information.info_per_point * target + 3] = interp_eval(vorticity_values, bary_cords[0], bary_cords[1], 2);
+    output_values[3] = interp_eval(vorticity_values, bary_cords[0], bary_cords[1], 2);
     for (int j = 0; j < run_information.tracer_count; j++) {
         curr_alphas = slice(tracer_values, 6 * j, 1, 6);
-        target_state[run_information.info_per_point * target + 4 + j] = interp_eval(curr_alphas, bary_cords[0], bary_cords[1], 2);
+        output_values[4 + j] = interp_eval(curr_alphas, bary_cords[0], bary_cords[1], 2);
     }
+    // for (int i = 0; i < run_information.info_per_point; i++) cout << output_values[i] << ",";
+    // cout << endl;
+    return output_values;
 }
 
 void remesh_points(run_config& run_information, vector<double>& target_points, vector<double>& dynamics_state,
-        vector<vector<vector<int>>>& dynamics_triangles, vector<vector<bool>>& dynamics_triangles_is_leaf) {
+        vector<vector<vector<int>>>& dynamics_triangles, vector<vector<bool>>& dynamics_triangles_is_leaf, int point_count) {
     // remesh points back to regular point distribution
     vector<double> curr_target;
-    // , v1, v2, v3, v4, v5, v6, bary_cords, vorticity_values (6, 0);
-    // vector<vector<double>> points (6, vector<double> (3, 0));
-    // vector<double> interp_matrix (36, 0);
-    // vector<int> poss_tris;
-    // vector<double> tracer_values (6 * (run_information.tracer_count), 0);
-    // vector<double> curr_alphas;
-    // double curr_vor;
     int iv1, iv2, iv3, iv4, iv5, iv6, curr_level, tri_loc, super_tri_loc; // , lb, ub;
-    // bool found_leaf_tri, found_curr_level;
-    // char trans = 'N';
-    // int Num = 6, nrhs = 1, info;
-    // vector<int> ipiv (6);
-    for (int i = 0; i < run_information.dynamics_curr_point_count; i++) {
+    // cout << target_points.size() << endl;
+    for (int i = 0; i < point_count; i++) {
+        // cout << i << " " << target_points.size() << endl;
 
         curr_target = slice(target_points, run_information.info_per_point * i, 1, 3);
+        // cout << "Here 5 1" << endl;
 
         tie(curr_level, tri_loc) = find_leaf_tri(curr_target, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, run_information.info_per_point, run_information.dynamics_levels_max);
         super_tri_loc = floor(tri_loc / 4.0);
+        // cout << "Here 5 2" << endl;
+        // cout << dynamics_triangles.size() << " " << curr_level << endl;
+        // cout << dynamics_triangles[curr_level-1].size() << " " << super_tri_loc << endl;
+        // cout << dynamics_triangles[curr_level].size() << " " << 4 * super_tri_loc + 3 << endl;
 
         iv1 = dynamics_triangles[curr_level-1][super_tri_loc][0];
         iv2 = dynamics_triangles[curr_level-1][super_tri_loc][1];
@@ -157,8 +162,17 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
         iv4 = dynamics_triangles[curr_level][4*super_tri_loc+3][0];
         iv5 = dynamics_triangles[curr_level][4*super_tri_loc+3][1];
         iv6 = dynamics_triangles[curr_level][4*super_tri_loc+3][2];
+        // cout << "Here 5 3" << endl;
 
-        biquadratic_interp(run_information, curr_target, i, iv1, iv2, iv3, iv4, iv5, iv6, target_points, dynamics_state);
+        curr_target = biquadratic_interp(run_information, curr_target, iv1, iv2, iv3, iv4, iv5, iv6, dynamics_state);
+        if (count_nans(curr_target) > 0) {
+            cout << "point: " << i << " level: " << curr_level << " super tri loc " << super_tri_loc << " tri_loc: " << tri_loc << endl;
+            cout << iv1 << "," << iv2 << "," << iv3 << "," << iv4 << "," << iv5 << "," << iv6 << endl;
+            cout << curr_target[0] << "," << curr_target[1] << "," << curr_target[2] << endl; 
+        }
+        // cout << "Here 5 4" << endl;
+        vector_copy(target_points, curr_target, run_information.info_per_point * i, run_information.info_per_point);
+        // cout << "Here 5 5" << endl;
     }
 }
 

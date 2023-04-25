@@ -14,6 +14,10 @@ void point_assign(run_config& run_information, vector<double>& point, vector<vec
         vector<vector<int>>& fast_sum_tree_point_locs, int point_id) {
     int iv1, iv2, iv3, lb, ub;
     vector<double> v1, v2, v3;
+    // fast_sum_tree_point_locs.clear();
+    // fast_sum_tree_tri_points.clear();
+    // fast_sum_tree_tri_points.resize(run_information.fast_sum_tree_levels);
+    // fast_sum_tree_point_locs.resize(run_information.fast_sum_tree_levels);
     for (int i = 0; i < run_information.fast_sum_tree_levels; i++) {
         // cout << i << endl;
         if (i > 0) {
@@ -77,6 +81,9 @@ void tree_traverse(run_config& run_information, vector<vector<vector<int>>>& fas
             tri_interactions.push_back({i, j, 0, 0});
         }
     }
+
+    // tri_interactions.clear();
+    tree_interactions.clear();
 
     while (tri_interactions.size() > 0) {
         curr_interact = tri_interactions.front(); // get triangle pair to interact
@@ -250,12 +257,14 @@ void cp(run_config& run_information, vector<double>& modify, vector<double>& cur
     if (info > 0) {
         cout << info << endl;
     }
+    // cout << "here 4 1" << endl;
     iv1 = fast_sum_icos_tri_verts[interact.lev_target][interact.curr_target][0];
     iv2 = fast_sum_icos_tri_verts[interact.lev_target][interact.curr_target][1];
     iv3 = fast_sum_icos_tri_verts[interact.lev_target][interact.curr_target][2];
     v1 = fast_sum_icos_verts[iv1];
     v2 = fast_sum_icos_verts[iv2];
     v3 = fast_sum_icos_verts[iv3];
+    // cout << "here 4 2" << endl;
     for (int i = 0; i < run_information.interp_point_count; i++) {
         u = interp_points[i][0];
         v = interp_points[i][1];
@@ -269,14 +278,23 @@ void cp(run_config& run_information, vector<double>& modify, vector<double>& cur
         vec_add(placeholder1, placeholder3);
         curr_points[i] = placeholder1;
     }
+    // cout << "here 4 3" << endl;
+    // cout << area.size() << endl;
+    // cout << run_information.dynamics_curr_point_count << endl;
 
     for (int i = 0; i < run_information.interp_point_count; i++) {
         // for (int j = 0; j < interptargets.size(); j++) interptargets[j] = 0;
 
+
         for (int j = 0; j < interact.count_source; j++) {
+            // cout << i << " " << j << endl;
+            // cout << fast_sum_tree_tri_points.size() << " " << interact.lev_source << endl;
+            // cout << fast_sum_tree_tri_points[interact.lev_source].size() << " " << interact.curr_source << endl;
+            // cout << fast_sum_tree_tri_points[interact.lev_source][interact.curr_source].size() << " " << j << endl;
             point_index = fast_sum_tree_tri_points[interact.lev_source][interact.curr_source][j];
             source_particle = slice(curr_state, run_information.info_per_point * point_index, 1, 3);
             func_val = BVE_gfunc(curr_points[i], source_particle);
+            // cout << "here 5 1" << endl;
             // cout << func_val[0] << endl;
             // cout << curr_points[0][0] << endl;
             interptargets[i] += func_val[0] * curr_state[run_information.info_per_point * point_index + 3] * area[point_index];
@@ -284,6 +302,7 @@ void cp(run_config& run_information, vector<double>& modify, vector<double>& cur
             interptargets[i + 2 * run_information.interp_point_count] += func_val[2] * curr_state[run_information.info_per_point * point_index + 3] * area[point_index];
         }
     }
+    // cout << "here 4 4" << endl;
 
     dgetrs_(&trans, &dim, &nrhs, &*interp_matrix.begin(), &dim, &*ipiv.begin(), &*interptargets.begin(), &dim, &info);
     if (info > 0) {
@@ -295,6 +314,7 @@ void cp(run_config& run_information, vector<double>& modify, vector<double>& cur
         alphas_y[i] = interptargets[i + run_information.interp_point_count];
         alphas_z[i] = interptargets[i + 2 * run_information.interp_point_count];
     }
+    // cout << "here 4 5" << endl;
 
     for (int i = 0; i < interact.count_target; i++) {
         point_index = fast_sum_tree_tri_points[interact.lev_target][interact.curr_target][i];

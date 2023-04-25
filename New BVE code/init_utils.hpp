@@ -3,7 +3,7 @@
 
 #include <cmath>
 #include <vector>
-#include <iostream>
+// #include <iostream>
 #include "general_utils.hpp"
 #include "structs.hpp"
 #include "vorticity_functions.hpp"
@@ -12,11 +12,16 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
         vector<vector<vector<int>>>& dynamics_triangles,
         // vector<vector<vector<int>>>& dynamics_points_adj_triangles,
         // vector<vector<int>>& dynamics_parent_triangles, vector<vector<int>>& dynamics_child_triangles,
-        vector<vector<int>>& dynamics_points_parents, vector<vector<bool>>& dynamics_triangles_is_leaf) {
+        vector<vector<int>>& dynamics_points_parents,
+        vector<vector<bool>>& dynamics_triangles_is_leaf) {
     // creates all the dynamics points and corresponding triangles
     double phi = (1 + sqrt(5)) / 2;
     int iv1, iv2, iv3, iv12, iv23, iv31;
     vector<double> v1, v2, v3, v12, v23, v31;
+    dynamics_state.clear();
+    dynamics_triangles.clear();
+    dynamics_points_parents.clear();
+    dynamics_triangles_is_leaf.clear();
     dynamics_state.resize(run_information.dynamics_initial_points * run_information.info_per_point, 0);
     // dynamics_triangles.resize(run_information.dynamics_initial_triangles, vector<int> (4, 0));
     dynamics_triangles.resize(run_information.dynamics_levels_max);
@@ -26,6 +31,7 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
     // dynamics_child_triangles.resize(run_information.dynamics_initial_triangles, vector<int> (4, -1));
     dynamics_points_parents.resize(run_information.dynamics_initial_points, vector<int> (2, -1));
     dynamics_triangles_is_leaf.resize(run_information.dynamics_levels_max);
+    // cout << "here 1 1" << endl;
     run_information.dynamics_curr_point_count = 12;
     run_information.dynamics_curr_tri_count = 20;
     vector_copy2(dynamics_state, project_to_sphere_2(vector<double> {0, 1, phi}, run_information.radius), 0, 3);
@@ -72,15 +78,19 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
     // dynamics_points_adj_triangles[9][0] = {8, 11, 14, 16, 17};
     // dynamics_points_adj_triangles[10][0] = {1, 4, 7, 18, 19};
     // dynamics_points_adj_triangles[11][0] = {9, 12, 15, 18, 19};
+    // cout << "here 1 2" << endl;
     for (int i = 0; i < run_information.dynamics_levels_min - 1; i++) {
         dynamics_triangles[i+1] = vector<vector<int>> (20 * pow(4, i+1), vector<int> (4, 0));
+
         for (int j = 0; j < 20 * pow(4, i); j++) {
+            // cout << i << " " << j << endl;
             iv1 = dynamics_triangles[i][j][0];
             iv2 = dynamics_triangles[i][j][1];
             iv3 = dynamics_triangles[i][j][2];
             v1 = slice(dynamics_state, run_information.info_per_point * iv1, 1, 3);
             v2 = slice(dynamics_state, run_information.info_per_point * iv2, 1, 3);
             v3 = slice(dynamics_state, run_information.info_per_point * iv3, 1, 3);
+            // cout << "here 2 1" << endl;
             v12 = v1;
             v23 = v2;
             v31 = v3;
@@ -93,9 +103,11 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
             project_to_sphere(v12, run_information.radius);
             project_to_sphere(v23, run_information.radius);
             project_to_sphere(v31, run_information.radius);
+            // cout << "here 2 1.5" << endl;
             iv12 = check_point_exist(dynamics_points_parents, run_information.dynamics_curr_point_count, min(iv1, iv2), max(iv1, iv2));
             iv23 = check_point_exist(dynamics_points_parents, run_information.dynamics_curr_point_count, min(iv2, iv3), max(iv2, iv3));
             iv31 = check_point_exist(dynamics_points_parents, run_information.dynamics_curr_point_count, min(iv3, iv1), max(iv3, iv1));
+            // cout << "here 2 2" << endl;
             if (iv12 == -1) {
                 iv12 = run_information.dynamics_curr_point_count;
                 run_information.dynamics_curr_point_count += 1;
@@ -114,12 +126,15 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
                 dynamics_points_parents[iv31] = {min(iv3, iv1), max(iv3, iv1)};
                 vector_copy2(dynamics_state, v31, iv31 * run_information.info_per_point, 3);
             }
+            // cout << "here 2 3" << endl;
             dynamics_triangles[i+1][4*j].insert(dynamics_triangles[i+1][4*j].begin(), {iv1, iv12, iv31, i + 1});
             dynamics_triangles[i+1][4*j+1].insert(dynamics_triangles[i+1][4*j+1].begin(), {iv2, iv12, iv23, i + 1});
             dynamics_triangles[i+1][4*j+2].insert(dynamics_triangles[i+1][4*j+2].begin(), {iv3, iv23, iv31, i + 1});
             dynamics_triangles[i+1][4*j+3].insert(dynamics_triangles[i+1][4*j+3].begin(), {iv12, iv23, iv31, i + 1});
+            // cout << "here 2 4" << endl;
         }
     }
+    // cout << "here 1 3" << endl;
     // for (int i = 0; i < run_information.dynamics_initial_triangles; i++) {
     // dynamics_triangles_is_leaf[run_information.dynamics_levels_min].resize(run_information.dynamics_initial_triangles, true);
     // }
@@ -138,6 +153,9 @@ void area_initialize(run_config& run_information, vector<double>& dynamics_state
     int iv1, iv2, iv3;
     vector<double> v1, v2, v3;
     double tri_area;
+    // dynamics_areas.fill()
+    // fill(dynamics_areas.begin(), dynamics_areas.end(), 0);
+    dynamics_areas.resize(run_information.dynamics_initial_points, 0);
     for (int i = 0; i < run_information.dynamics_initial_triangles; i++) {
         iv1 = dynamics_triangles[run_information.dynamics_levels_min-1][i][0];
         iv2 = dynamics_triangles[run_information.dynamics_levels_min-1][i][1];
@@ -149,24 +167,6 @@ void area_initialize(run_config& run_information, vector<double>& dynamics_state
         dynamics_areas[iv1] += tri_area / 3.0;
         dynamics_areas[iv2] += tri_area / 3.0;
         dynamics_areas[iv3] += tri_area / 3.0;
-    }
-}
-
-void area_init(run_config& run_information, vector<double>& curr_state, vector<double>& area, vector<vector<int>>& triangles, int tri_count) {
-    int iv1, iv2, iv3;
-    double curr_area;
-    vector<double> v1, v2, v3;
-    for (int i = 0; i < tri_count; i++) {
-        iv1 = triangles[i][0];
-        iv2 = triangles[i][1];
-        iv3 = triangles[i][2];
-        v1 = slice(curr_state, 5 * iv1, 1, 3);
-        v2 = slice(curr_state, 5 * iv2, 1, 3);
-        v3 = slice(curr_state, 5 * iv3, 1, 3);
-        curr_area = sphere_tri_area(v1, v2, v3, run_information.radius);
-        area[iv1] += curr_area / 3.0;
-        area[iv2] += curr_area / 3.0;
-        area[iv3] += curr_area / 3.0;
     }
 }
 

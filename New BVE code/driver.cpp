@@ -17,6 +17,7 @@
 #include "io_utils.hpp"
 #include "rhs_utils.hpp"
 #include "conservation_fixer.hpp"
+#include "amr.hpp"
 
 using namespace std;
 
@@ -26,6 +27,7 @@ int main() {
 
     run_config run_information;
     read_run_config("namelist.txt", run_information); // reads in run configuration information
+    double test_area;
 
     vector<double> dynamics_state; // list of points and other information in a flattened array
     vector<vector<vector<int>>> dynamics_triangles; // at level i, each entry is a vector which contains the 3 vertices and the refinement level of the triangle
@@ -52,12 +54,13 @@ int main() {
     vector<double> c_4;
     vector<double> c1234;
     vector<double> inter_state;
-
+    // cout << "here -2" << endl;
     // dynamics_points_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_points_adj_triangles, dynamics_parent_triangles, dynamics_child_triangles, dynamics_points_parents);
     dynamics_points_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_points_parents, dynamics_triangles_is_leaf);
-
+    // cout << "here -1" << endl;
     vector<double> dynamics_areas (run_information.dynamics_initial_points, 0);
     area_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_areas); // finds areas for each point
+    // cout << "here 0" << endl;
     vorticity_initialize(run_information, dynamics_state, dynamics_areas); // initializes vorticity values for each point
     tracer_initialize(run_information, dynamics_state); // initializes tracer values for each point
     if (run_information.use_fixer) {
@@ -113,18 +116,28 @@ int main() {
     // cout << "here 2" << endl;
 
     for (int t = 0; t < run_information.time_steps; t++ ) {  // progress the dynamics
-        // c_1.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-        // c_2.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-        // c_3.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-        // c_4.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-        // c1234.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-        // inter_state.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
         if (run_information.use_amr) {
+            c_1.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+            c_2.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+            c_3.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+            c_4.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+            c1234.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+            inter_state.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+        }
+
+        if (run_information.use_amr and run_information.use_fast) {
+            // cout << "here 1" << endl;
+            fast_sum_tree_point_locs.clear();
+            fast_sum_tree_tri_points.clear();
+            fast_sum_tree_tri_points.resize(run_information.fast_sum_tree_levels);
+            fast_sum_tree_point_locs.resize(run_information.fast_sum_tree_levels);
             points_assign(run_information, dynamics_state, fast_sum_icos_verts, fast_sum_icos_tri_verts, fast_sum_tree_tri_points, fast_sum_tree_point_locs);
             tree_traverse(run_information, fast_sum_tree_tri_points, fast_sum_icos_tri_info, fast_sum_tree_interactions);
+            // cout << "here 2" << endl;
         }
         // cout << "here 1" << endl;
         rhs_func(run_information, c_1, dynamics_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_1
+        // cout << "here 1.5" << endl;
         inter_state = c_1; // k_1
         scalar_mult(inter_state, run_information.delta_t / 2.0); // delta_t/2*k1
         vec_add(inter_state, dynamics_state); // x+delta_t/2*k1
@@ -149,12 +162,25 @@ int main() {
         vec_add(c1234, c_4);
         scalar_mult(c1234, run_information.delta_t / 6.0); // RK4 update
         // cout << "here 3" << endl;
-        if (run_information.use_remesh) {
+        if (run_information.use_amr) {
+            vec_add(dynamics_state, c1234);
+            project_points(run_information, dynamics_state, omega);
+            // cout << "here 1 1" << endl;
+            // cout << count_nans(dynamics_state) << endl;
+            amr_wrapper(run_information, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, dynamics_points_parents, dynamics_areas);
+            test_area = 0;
+            for (int i = 0; i < dynamics_areas.size(); i++) test_area += dynamics_areas[i];
+            if (abs(test_area - 4 * M_PI) > pow(10, -8)) cout << "wrong area: " << setprecision(15) << test_area << endl;
+            // cout << "here 1 2" << endl;
+            // cout << count_nans(dynamics_state) << endl;
+            project_points(run_information, dynamics_state, omega);
+        } else if (run_information.use_remesh) {
             vec_add(c1234, dynamics_state);
             project_points(run_information, c1234, omega);
             // cout << "here 6" << endl;
-            remesh_points(run_information, dynamics_state, c1234, dynamics_triangles, dynamics_triangles_is_leaf);
+            remesh_points(run_information, dynamics_state, c1234, dynamics_triangles, dynamics_triangles_is_leaf, run_information.dynamics_curr_point_count);
             // cout << "here 7" << endl;
+            cout << "points: " << run_information.dynamics_curr_point_count << endl;
         } else {
             vec_add(dynamics_state, c1234);
             project_points(run_information, dynamics_state, omega);
@@ -166,7 +192,7 @@ int main() {
         if (run_information.write_output) {
             write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
         }
-        cout << t << endl;
+        cout << "time: " << t << endl;
     }
 
     chrono::steady_clock::time_point end = chrono::steady_clock::now();

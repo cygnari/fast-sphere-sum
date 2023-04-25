@@ -67,6 +67,10 @@ void read_run_config(string file_name, run_config& run_information) {
             run_information.interp_degree = stoi(word2);
         } else if (word1 == "info_per_point") {
             run_information.info_per_point = stoi(word2);
+        } else if (word1 == "amr_vor_thresh") {
+            run_information.amr_vor_thresh = stod(word2);
+        } else if (word1 == "amr_circ_thresh") {
+            run_information.amr_circ_thresh = stod(word2);
         } else {
             run_information.time_steps = int(run_information.end_time / run_information.delta_t);
             run_information.dynamics_initial_points = 10 * pow(4, run_information.dynamics_levels_min - 1) + 2;

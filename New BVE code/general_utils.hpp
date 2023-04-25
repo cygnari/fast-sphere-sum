@@ -8,6 +8,7 @@
 #include <cassert>
 #include <algorithm>
 #include <tuple>
+#include <iostream>
 
 extern "C" { // lapack
     extern int dgesv_(int*,int*,double*,int*,int*,double*,int*,int*);
@@ -16,6 +17,14 @@ extern "C" { // lapack
 }
 
 using namespace std;
+
+int count_nans(vector<double>& x) {
+    int count = 0;
+    for (int i = 0; i < x.size(); i++) {
+        if (isnan(x[i])) count +=1;
+    }
+    return count;
+}
 
 double dot_prod(vector<double>& x, vector<double>& y) { // dot product of vectors x and y
     double sum = 0;
@@ -261,6 +270,7 @@ void replace(vector<int>& vals, int find, int replacement) { // replace find in 
 }
 
 int check_point_exist(vector<vector<int>>& parent_points, int point_count, int iv1, int iv2) {
+    // cout << parent_points.size() << " " << point_count << endl;
     for (int i = 0; i < point_count; i++) {
         if ((parent_points[i][0] == iv1) and (parent_points[i][1] == iv2)) return i;
     }
@@ -280,7 +290,7 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
     int curr_level = 0;
     int lb = 0;
     int ub = 20;
-    int iv1, iv2, iv3, tri_loc;
+    int iv1, iv2, iv3, tri_loc = 0;
     vector<double> v1, v2, v3, bary_cords;
     for (int level = 0; level < max_level; level++) {
         found_curr_level = false;
@@ -292,8 +302,15 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
             v2 = slice(dynamics_state, info_per_point * iv2, 1, 3);
             v3 = slice(dynamics_state, info_per_point * iv3, 1, 3);
             bary_cords = barycoords(v1, v2, v3, target_point);
+            // cout << v1[0] << " " << v1[1] << " " << v1[2] << endl;
+            // cout << v2[0] << " " << v2[1] << " " << v2[2] << endl;
+            // cout << v3[0] << " " << v3[1] << " " << v3[2] << endl;
+            // cout << bary_cords[0] << " " << bary_cords[1] << " " << bary_cords[2] << endl;
             if (check_in_tri(v1, v2, v3, target_point)) {
                 found_curr_level = true;
+                // curr_level = level;
+                // tri_loc = j;
+                // cout << level << endl;
                 if (dynamics_triangles_is_leaf[level][j]) {
                     found_leaf_tri = true;
                     tri_loc = j;
@@ -310,6 +327,7 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
         }
         if (found_leaf_tri) break;
         if (not found_curr_level) {
+            // cout << "bad " << level << endl;
             for (int j = 0; j < 20 * pow(4, level); j++) {
                 iv1 = dynamics_triangles[level][j][0];
                 iv2 = dynamics_triangles[level][j][1];
@@ -320,6 +338,9 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
                 bary_cords = barycoords(v1, v2, v3, target_point);
                 if (check_in_tri(v1, v2, v3, target_point)) {
                     found_curr_level = true;
+                    // curr_level = level;
+                    // tri_loc = j;
+                    // cout << level << endl;
                     if (dynamics_triangles_is_leaf[level][j]) {
                         found_leaf_tri = true;
                         tri_loc = j;

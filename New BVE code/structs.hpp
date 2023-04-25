@@ -23,6 +23,8 @@ struct run_config {
     int interp_degree; // interpolation degree
     int interp_point_count; // number of interpolation points
     int info_per_point; // how many doubles each point is, for example, storing x y z vor tracer = 5
+    double amr_circ_thresh = 0.005; // threshold for circulation in amr
+    double amr_vor_thresh = 0.4; // threshold for vorticity difference in amr
 
     // derived run config info
     int time_steps; // number of time steps

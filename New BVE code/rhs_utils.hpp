@@ -37,6 +37,7 @@ void rhs_fast_sum(run_config& run_information, vector<double>& modify, vector<do
         vector<interaction_pair>& interactions, vector<vector<vector<int>>>& fast_sum_tree_tri_points, vector<vector<vector<int>>>& fast_sum_icos_tri_verts,
         vector<vector<double>>& fast_sum_icos_verts) {
     for (int i = 0; i < interactions.size(); i++) {
+        // cout << i << " " << interactions[i].type << endl;
         if (interactions[i].type == "pp") pp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points);
         else if (interactions[i].type == "cp") cp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
         // else if (interactions[i].type == "pc") pc(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
@@ -53,12 +54,14 @@ void rhs_func(run_config& run_information, vector<double>& modify, vector<double
         double omega, vector<interaction_pair>& interactions, vector<vector<vector<int>>>& fast_sum_tree_tri_points, vector<vector<vector<int>>>& fast_sum_icos_tri_verts,
         vector<vector<double>>& fast_sum_icos_verts) {
     fill(modify.begin(), modify.end(), 0);
+    // cout << "here 2 1" << endl;
     if (run_information.use_fast) {
         rhs_fast_sum(run_information, modify, dynamics_state, dynamics_areas, interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
     } else { // f for fast
         rhs_direct_sum(run_information, modify, dynamics_state, dynamics_areas);
     }
     // rhs_direct_sum(run_information, modify, dynamics_state, dynamics_areas, omega);
+    // cout << "here 2 2" << endl;
     scalar_mult(modify, -1.0 / (4.0 * M_PI));
     for (int i = 0; i < run_information.dynamics_curr_point_count; i++) modify[run_information.info_per_point * i + 3] = -2 * omega * modify[run_information.info_per_point * i + 2];
 }
