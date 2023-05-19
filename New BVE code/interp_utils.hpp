@@ -145,6 +145,7 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
     // cout << target_points.size() << endl;
     for (int i = 0; i < point_count; i++) {
         // cout << i << " " << target_points.size() << endl;
+        // cout << i << endl;
 
         curr_target = slice(target_points, run_information.info_per_point * i, 1, 3);
         // cout << "Here 5 1" << endl;
@@ -168,7 +169,7 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
         if (count_nans(curr_target) > 0) {
             cout << "point: " << i << " level: " << curr_level << " super tri loc " << super_tri_loc << " tri_loc: " << tri_loc << endl;
             cout << iv1 << "," << iv2 << "," << iv3 << "," << iv4 << "," << iv5 << "," << iv6 << endl;
-            cout << curr_target[0] << "," << curr_target[1] << "," << curr_target[2] << endl; 
+            cout << curr_target[0] << "," << curr_target[1] << "," << curr_target[2] << endl;
         }
         // cout << "Here 5 4" << endl;
         vector_copy(target_points, curr_target, run_information.info_per_point * i, run_information.info_per_point);

@@ -47,24 +47,24 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
     vector_copy2(dynamics_state, project_to_sphere_2(vector<double> {-phi, 0, 1}, run_information.radius), 10 * run_information.info_per_point, 3);
     vector_copy2(dynamics_state, project_to_sphere_2(vector<double> {-phi, 0, -1}, run_information.radius), 11 * run_information.info_per_point, 3);
     dynamics_triangles[0][0].insert(dynamics_triangles[0][0].begin(), {0, 1, 8, 0}); // 0, 1, 2 are indices of the three vertices
-    dynamics_triangles[0][1].insert(dynamics_triangles[0][1].begin(), {0, 1, 10, 0}); // 20 starting faces
-    dynamics_triangles[0][2].insert(dynamics_triangles[0][2].begin(), {0, 4, 6, 0});
-    dynamics_triangles[0][3].insert(dynamics_triangles[0][3].begin(), {0, 4, 8, 0});
+    dynamics_triangles[0][1].insert(dynamics_triangles[0][1].begin(), {0, 10, 1, 0}); // 20 starting faces
+    dynamics_triangles[0][2].insert(dynamics_triangles[0][2].begin(), {0, 4, 6, 0}); // make sure the points are in CCW order
+    dynamics_triangles[0][3].insert(dynamics_triangles[0][3].begin(), {0, 8, 4, 0});
     dynamics_triangles[0][4].insert(dynamics_triangles[0][4].begin(), {0, 6, 10, 0});
-    dynamics_triangles[0][5].insert(dynamics_triangles[0][5].begin(), {1, 5, 7, 0});
+    dynamics_triangles[0][5].insert(dynamics_triangles[0][5].begin(), {1, 7, 5, 0});
     dynamics_triangles[0][6].insert(dynamics_triangles[0][6].begin(), {1, 5, 8, 0});
-    dynamics_triangles[0][7].insert(dynamics_triangles[0][7].begin(), {1, 7, 10, 0});
-    dynamics_triangles[0][8].insert(dynamics_triangles[0][8].begin(), {2, 3, 9, 0});
+    dynamics_triangles[0][7].insert(dynamics_triangles[0][7].begin(), {1, 10, 7, 0});
+    dynamics_triangles[0][8].insert(dynamics_triangles[0][8].begin(), {2, 9, 3, 0});
     dynamics_triangles[0][9].insert(dynamics_triangles[0][9].begin(), {2, 3, 11, 0});
-    dynamics_triangles[0][10].insert(dynamics_triangles[0][10].begin(), {2, 4, 6, 0});
+    dynamics_triangles[0][10].insert(dynamics_triangles[0][10].begin(), {2, 6, 4, 0});
     dynamics_triangles[0][11].insert(dynamics_triangles[0][11].begin(), {2, 4, 9, 0});
-    dynamics_triangles[0][12].insert(dynamics_triangles[0][12].begin(), {2, 6, 11, 0});
+    dynamics_triangles[0][12].insert(dynamics_triangles[0][12].begin(), {2, 11, 6, 0});
     dynamics_triangles[0][13].insert(dynamics_triangles[0][13].begin(), {3, 5, 7, 0});
-    dynamics_triangles[0][14].insert(dynamics_triangles[0][14].begin(), {3, 5, 9, 0});
+    dynamics_triangles[0][14].insert(dynamics_triangles[0][14].begin(), {3, 9, 5, 0});
     dynamics_triangles[0][15].insert(dynamics_triangles[0][15].begin(), {3, 7, 11, 0});
     dynamics_triangles[0][16].insert(dynamics_triangles[0][16].begin(), {4, 8, 9, 0});
-    dynamics_triangles[0][17].insert(dynamics_triangles[0][17].begin(), {5, 8, 9, 0});
-    dynamics_triangles[0][18].insert(dynamics_triangles[0][18].begin(), {6, 10, 11, 0});
+    dynamics_triangles[0][17].insert(dynamics_triangles[0][17].begin(), {5, 9, 8, 0});
+    dynamics_triangles[0][18].insert(dynamics_triangles[0][18].begin(), {6, 11, 10, 0});
     dynamics_triangles[0][19].insert(dynamics_triangles[0][19].begin(), {7, 10, 11, 0});
     // dynamics_points_adj_triangles[0][0] = {0, 1, 2, 3, 4};
     // dynamics_points_adj_triangles[1][0] = {0, 1, 5, 6, 7};
@@ -128,9 +128,10 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
             }
             // cout << "here 2 3" << endl;
             dynamics_triangles[i+1][4*j].insert(dynamics_triangles[i+1][4*j].begin(), {iv1, iv12, iv31, i + 1});
-            dynamics_triangles[i+1][4*j+1].insert(dynamics_triangles[i+1][4*j+1].begin(), {iv2, iv12, iv23, i + 1});
-            dynamics_triangles[i+1][4*j+2].insert(dynamics_triangles[i+1][4*j+2].begin(), {iv3, iv23, iv31, i + 1});
+            dynamics_triangles[i+1][4*j+1].insert(dynamics_triangles[i+1][4*j+1].begin(), {iv2, iv23, iv12, i + 1});
+            dynamics_triangles[i+1][4*j+2].insert(dynamics_triangles[i+1][4*j+2].begin(), {iv3, iv31, iv23, i + 1});
             dynamics_triangles[i+1][4*j+3].insert(dynamics_triangles[i+1][4*j+3].begin(), {iv12, iv23, iv31, i + 1});
+            run_information.dynamics_curr_tri_count += 3;
             // cout << "here 2 4" << endl;
         }
     }

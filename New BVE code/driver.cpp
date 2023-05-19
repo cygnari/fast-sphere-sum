@@ -92,24 +92,36 @@ int main() {
     stringstream ss;
     int precision;
     if (run_information.end_time >= 1.0) precision = 0;
-    else precision = -log10(run_information.end_time);
+    else precision = ceil(-log10(run_information.end_time));
     ss << fixed << setprecision(precision) << run_information.end_time;
     output_filename += "_" + ss.str();
 
     ofstream write_out1("./run-output/output_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
     ofstream write_out2("./run-output/point_counts_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
+    ofstream write_out3("./run-output/triangles_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // write out the triangles
+    ofstream write_out4("./run-output/tri_count_" + output_filename + ".csv", ofstream::out | ofstream::trunc);
 
     if (run_information.write_output) {
         // ofstream write_out1("./run-output/output_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
         // ofstream write_out2("./run-output/point_counts_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
         write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
-    }
-    if (not run_information.write_output) {
+    } else {
         int info;
         string name1 = "./run-output/output_" + output_filename + ".csv";
         string name2 = "./run-output/point_counts_" + output_filename + ".csv";
         info = remove(name1.c_str());
         info = remove(name2.c_str());
+    }
+
+    // if (not run_information.)
+    if (run_information.write_tris) {
+        write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_out3, write_out4);
+    } else {
+        int info;
+        string name3 = "./run-output/triangles_" + output_filename + ".csv";
+        string name4 = "./run-output/tri_count_" + output_filename + ".csv";
+        info = remove(name3.c_str());
+        info = remove(name4.c_str());
     }
 
     chrono::steady_clock::time_point begin = chrono::steady_clock::now();
@@ -161,8 +173,19 @@ int main() {
         vec_add(c1234, c_3);
         vec_add(c1234, c_4);
         scalar_mult(c1234, run_information.delta_t / 6.0); // RK4 update
+        // scalar_mult(c_1, run_information.delta_t / 6.0);
+        // scalar_mult(c_2, 2 * run_information.delta_t / 6.0);
+        // scalar_mult(c_3, 2 * run_information.delta_t / 6.0);
+        // scalar_mult(c_4, run_information.delta_t / 6.0);
         // cout << "here 3" << endl;
         if (run_information.use_amr) {
+            // c1234 = c_1;
+            // scalar_mult(c_2, 2);
+            // scalar_mult(c_3, 2);
+            // vec_add(c1234, c_2);
+            // vec_add(c1234, c_3);
+            // vec_add(c1234, c_4);
+            // scalar_mult(c1234, run_information.delta_t / 6.0); // RK4 update
             vec_add(dynamics_state, c1234);
             project_points(run_information, dynamics_state, omega);
             // cout << "here 1 1" << endl;
@@ -175,13 +198,30 @@ int main() {
             // cout << count_nans(dynamics_state) << endl;
             project_points(run_information, dynamics_state, omega);
         } else if (run_information.use_remesh) {
+            // c1234 = dynamics_state;
+            // vec_add(c1234, c_1);
+            // project_points(run_information, c1234, omega);
+            // vec_add(c1234, c_2);
+            // project_points(run_information, c1234, omega);
+            // vec_add(c1234, c_3);
+            // project_points(run_information, c1234, omega);
+            // vec_add(c1234, c_4);
+            // project_points(run_information, c1234, omega);
+            // scalar_mult(c_1)
             vec_add(c1234, dynamics_state);
             project_points(run_information, c1234, omega);
             // cout << "here 6" << endl;
             remesh_points(run_information, dynamics_state, c1234, dynamics_triangles, dynamics_triangles_is_leaf, run_information.dynamics_curr_point_count);
             // cout << "here 7" << endl;
-            cout << "points: " << run_information.dynamics_curr_point_count << endl;
+
         } else {
+            // c1234 = c_1;
+            // scalar_mult(c_2, 2);
+            // scalar_mult(c_3, 2);
+            // vec_add(c1234, c_2);
+            // vec_add(c1234, c_3);
+            // vec_add(c1234, c_4);
+            // scalar_mult(c1234, run_information.delta_t / 6.0); // RK4 update
             vec_add(dynamics_state, c1234);
             project_points(run_information, dynamics_state, omega);
         }
@@ -192,10 +232,21 @@ int main() {
         if (run_information.write_output) {
             write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
         }
+        if (run_information.write_tris) {
+            write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_out3, write_out4);
+        }
+        if (count_nans(dynamics_state) > 0) {
+            cout << "nans present!" << endl;
+        }
+        cout << "points: " << run_information.dynamics_curr_point_count << endl;
         cout << "time: " << t << endl;
     }
 
     chrono::steady_clock::time_point end = chrono::steady_clock::now();
     cout << "time taken: " << chrono::duration_cast<chrono::microseconds>(end - begin).count() << " microseconds" << endl;
+    write_out1.close();
+    write_out2.close();
+    write_out3.close();
+    write_out4.close();
     return 0;
 }
