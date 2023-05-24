@@ -277,6 +277,15 @@ int check_point_exist(vector<vector<int>>& parent_points, int point_count, int i
     return -1;
 }
 
+int check_point_exist2(vector<double>& state, vector<double>& target_point, int point_count, double tol, int info_per_point) {
+    for (int i = 0; i < point_count; i++) {
+        if ((abs(state[i * info_per_point] - target_point[0]) < tol) and (abs(state[i * info_per_point + 1] - target_point[1]) < tol) and (abs(state[i * info_per_point + 2] - target_point[2]) < tol)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 int check_in_vec(vector<vector<double>>& x, vector<double>& y) { // checks if length 3 vector y is in vector of vectors x
     for (int i = 0; i < x.size(); i++) {
         if ((x[i][0] == y[0]) and (x[i][1] == y[1]) and (x[i][2] == y[2])) return i; // index where y is in x
@@ -364,6 +373,21 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
     //         }
     //     }
     // }
+    // for (int level = 0)
+    // for (int j = 0; j < 20; j++) {
+    //     iv1 = dynamics_triangles[0][j][0];
+    //     iv2 = dynamics_triangles[0][j][1];
+    //     iv3 = dynamics_triangles[0][j][2];
+    //     v1 = slice(dynamics_state, info_per_point * iv1, 1, 3);
+    //     v2 = slice(dynamics_state, info_per_point * iv2, 1, 3);
+    //     v3 = slice(dynamics_state, info_per_point * iv3, 1, 3);
+    //     bary_cords = barycoords(v1, v2, v3, target_point);
+    //     // cout << target_point[0] << " " << target_point[1] << " " << target_point[2] << endl;
+    //     // cout << v1[0] << " " << v1[1] << " " << v1[2] << endl;
+    //     // cout << v2[0] << " " << v2[1] << " " << v2[2] << endl;
+    //     // cout << v3[0] << " " << v3[1] << " " << v3[2] << endl;
+    //     // cout << setprecision(15) << bary_cords[0] << " " << bary_cords[1] << " " << bary_cords[2] << endl;
+    // }
     for (int level = 0; level < max_level; level++) {
         found_curr_level = false;
         // cout << level << endl;
@@ -382,6 +406,7 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
             // if (check_in_tri(v1, v2, v3, target_point)) {
             if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -10))) {
                 // cout << "leaf " << dynamics_triangles_is_leaf[level][j] << endl;
+                // cout << "found" << endl;
                 found_curr_level = true;
                 curr_level = level;
                 tri_loc = j;
@@ -414,6 +439,7 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
                 // cout << bary_cords[0] << " " << bary_cords[1] << " " << bary_cords[2] << endl;
                 if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -10))) {
                     // cout << "leaf2 " << dynamics_triangles_is_leaf[level][j] << endl;
+                    // cout << "found" << endl;
                     found_curr_level = true;
                     curr_level = level;
                     tri_loc = j;
@@ -435,7 +461,43 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
         }
         if (found_leaf_tri) break;
     }
-    return make_tuple(curr_level, tri_loc);
+
+    if (found_leaf_tri) {
+        return make_tuple(curr_level, tri_loc);
+    } else {
+        for (int i = max_level - 1; i > 0; i--) {
+            // cout << "i: " << i << endl;
+            for (int j = 0; j < 20 * pow(4, i); j++) {
+                // cout << "j: " << j << endl;
+                // cout << "size1: " << dynamics_triangles.size() << endl;
+                // cout << "size2: " << dynamics_triangles[i].size() << endl;
+                iv1 = dynamics_triangles[i][j][0];
+                // cout << "here 2 1" << endl;
+                iv2 = dynamics_triangles[i][j][1];
+                // cout << "here 2 2" << endl;
+                iv3 = dynamics_triangles[i][j][2];
+                // cout << "here 2 3" << endl;
+                v1 = slice(dynamics_state, info_per_point * iv1, 1, 3);
+                // cout << "here 2 4" << endl;
+                v2 = slice(dynamics_state, info_per_point * iv2, 1, 3);
+                // cout << "here 2 5" << endl;
+                v3 = slice(dynamics_state, info_per_point * iv3, 1, 3);
+                // cout << "here 2 6" << endl;
+                bary_cords = barycoords(v1, v2, v3, target_point);
+                if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -10))) {
+                    // if (dynamics_triangles_is_leaf[i][j]) {
+                    curr_level = i;
+                    tri_loc = j;
+                    return make_tuple(curr_level, tri_loc);
+                    // }
+                }
+            }
+        }
+        return make_tuple(-1, -1);
+    }
+    // return make_tuple(-1, -1);
+    // return make_tuple(curr_level, tri_loc);
+
 }
 
 #endif

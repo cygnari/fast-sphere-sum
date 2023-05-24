@@ -24,6 +24,14 @@ void rhs_direct_sum(run_config& run_information, vector<double>& modify, vector<
                 contribution = BVE_gfunc(particle_i, particle_j);
                 scalar_mult(contribution, dynamics_state[run_information.info_per_point * j + 3] * dynamics_areas[j]);
                 vec_add(pos_change, contribution);
+                // if (count_nans(contribution)) {
+                //     cout << "problem: " << i << " " << j << endl;
+                // }
+                if ((abs(particle_i[0] - particle_j[0]) < pow(10, -14)) and (abs(particle_i[1] - particle_j[1]) < pow(10, -14)) and (abs(particle_i[2] - particle_j[2]) < pow(10, -14))) {
+                    cout << "duplicate: " << i << " " << j << endl;
+                    cout << setprecision(15) << "i: " << particle_i[0] << " " << particle_i[1] << " " << particle_i[2] << endl;
+                    cout << setprecision(15) << "i: " << particle_j[0] << " " << particle_j[1] << " " << particle_j[2] << endl;
+                }
             }
         }
         // scalar_mult(pos_change, -1.0 / (4.0 * M_PI));
@@ -61,7 +69,7 @@ void rhs_func(run_config& run_information, vector<double>& modify, vector<double
         rhs_direct_sum(run_information, modify, dynamics_state, dynamics_areas);
     }
     // rhs_direct_sum(run_information, modify, dynamics_state, dynamics_areas, omega);
-    // cout << "here 2 2" << endl;
+    // cout << "here 2 1 " << count_nans(modify) << endl;
     scalar_mult(modify, -1.0 / (4.0 * M_PI));
     for (int i = 0; i < run_information.dynamics_curr_point_count; i++) modify[run_information.info_per_point * i + 3] = -2 * omega * modify[run_information.info_per_point * i + 2];
 }

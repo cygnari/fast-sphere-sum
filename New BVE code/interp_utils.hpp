@@ -70,6 +70,25 @@ double interp_eval(vector<double>& alphas, double s, double t, int degree) { // 
     return accum;
 }
 
+vector<double> bilinear_interp(run_config& run_information, vector<double>& target_point, int iv1, int iv2, int iv3, vector<double>& dynamics_state) {
+    vector<double> v1, v2, v3, bary_cords, out;
+
+    v1 = slice(dynamics_state, run_information.info_per_point * iv1, 1, 3);
+    v2 = slice(dynamics_state, run_information.info_per_point * iv2, 1, 3);
+    v3 = slice(dynamics_state, run_information.info_per_point * iv3, 1, 3);
+    bary_cords = barycoords(v1, v2, v3, target_point);
+    v1 = slice(dynamics_state, run_information.info_per_point * iv1, 1, run_information.info_per_point);
+    v2 = slice(dynamics_state, run_information.info_per_point * iv2, 1, run_information.info_per_point);
+    v3 = slice(dynamics_state, run_information.info_per_point * iv3, 1, run_information.info_per_point);
+    scalar_mult(v1, bary_cords[0]);
+    scalar_mult(v2, bary_cords[1]);
+    scalar_mult(v3, bary_cords[2]);
+    out = v1;
+    vec_add(out, v2);
+    vec_add(out, v3);
+    return out;
+}
+
 vector<double> biquadratic_interp(run_config& run_information, vector<double>& target_point, int iv1, int iv2, int iv3, int iv4,
         int iv5, int iv6, vector<double>& dynamics_state) {
 
@@ -138,10 +157,11 @@ vector<double> biquadratic_interp(run_config& run_information, vector<double>& t
 }
 
 void remesh_points(run_config& run_information, vector<double>& target_points, vector<double>& dynamics_state,
-        vector<vector<vector<int>>>& dynamics_triangles, vector<vector<bool>>& dynamics_triangles_is_leaf, int point_count) {
+        vector<vector<vector<int>>>& dynamics_triangles, vector<vector<bool>>& dynamics_triangles_is_leaf, int point_count, double omega) {
     // remesh points back to regular point distribution
     vector<double> curr_target;
     int iv1, iv2, iv3, iv4, iv5, iv6, curr_level, tri_loc, super_tri_loc; // , lb, ub;
+    double vor1, vor2, vor3, vor4, vor5, vor6, vormax, vormin, vor;
     // cout << target_points.size() << endl;
     for (int i = 0; i < point_count; i++) {
         // cout << i << " " << target_points.size() << endl;
@@ -152,6 +172,9 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
 
         tie(curr_level, tri_loc) = find_leaf_tri(curr_target, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, run_information.info_per_point, run_information.dynamics_levels_max);
         super_tri_loc = floor(tri_loc / 4.0);
+        if (tri_loc == -1) {
+            cout << "find error" << endl;
+        }
         // cout << "Here 5 2" << endl;
         // cout << dynamics_triangles.size() << " " << curr_level << endl;
         // cout << dynamics_triangles[curr_level-1].size() << " " << super_tri_loc << endl;
@@ -163,9 +186,35 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
         iv4 = dynamics_triangles[curr_level][4*super_tri_loc+3][0];
         iv5 = dynamics_triangles[curr_level][4*super_tri_loc+3][1];
         iv6 = dynamics_triangles[curr_level][4*super_tri_loc+3][2];
+        vor1 = dynamics_state[run_information.info_per_point * iv1 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv1 + 2];
+        vor2 = dynamics_state[run_information.info_per_point * iv2 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv2 + 2];
+        vor3 = dynamics_state[run_information.info_per_point * iv3 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv3 + 2];
+        vor4 = dynamics_state[run_information.info_per_point * iv4 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv4 + 2];
+        vor5 = dynamics_state[run_information.info_per_point * iv5 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv5 + 2];
+        vor6 = dynamics_state[run_information.info_per_point * iv6 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv6 + 2];
+        // vor1 = dynamics_state[run_information.info_per_point * iv1 + 3];
+        // vor2 = dynamics_state[run_information.info_per_point * iv2 + 3];
+        // vor3 = dynamics_state[run_information.info_per_point * iv3 + 3];
+        // vor4 = dynamics_state[run_information.info_per_point * iv4 + 3];
+        // vor5 = dynamics_state[run_information.info_per_point * iv5 + 3];
+        // vor6 = dynamics_state[run_information.info_per_point * iv6 + 3];
+        vormax = max(vor1, max(vor2, max(vor3, max(vor4, max(vor5, vor6)))));
+        vormin = min(vor1, min(vor2, min(vor3, min(vor4, min(vor5, vor6)))));
         // cout << "Here 5 3" << endl;
+        // vor = curr_target[3] + 2 * omega * curr_target[2];
+
 
         curr_target = biquadratic_interp(run_information, curr_target, iv1, iv2, iv3, iv4, iv5, iv6, dynamics_state);
+        // vor = curr_target[3];
+        // vor = curr_target[3] + 2 * omega * curr_target[2];
+        // if ((vor > vormax) or (vor < vormin)) {
+        //     // violate monotonicity, do bilinear interp
+        //     curr_target = slice(target_points, run_information.info_per_point * i, 1, 3);
+        //     iv1 = dynamics_triangles[curr_level][tri_loc][0];
+        //     iv2 = dynamics_triangles[curr_level][tri_loc][1];
+        //     iv3 = dynamics_triangles[curr_level][tri_loc][2];
+        //     curr_target = bilinear_interp(run_information, curr_target, iv1, iv2, iv3, dynamics_state);
+        // }
         if (count_nans(curr_target) > 0) {
             cout << "point: " << i << " level: " << curr_level << " super tri loc " << super_tri_loc << " tri_loc: " << tri_loc << endl;
             cout << iv1 << "," << iv2 << "," << iv3 << "," << iv4 << "," << iv5 << "," << iv6 << endl;

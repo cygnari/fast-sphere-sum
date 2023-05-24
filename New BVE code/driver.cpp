@@ -129,12 +129,18 @@ int main() {
 
     for (int t = 0; t < run_information.time_steps; t++ ) {  // progress the dynamics
         if (run_information.use_amr) {
+            amr_wrapper(run_information, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, dynamics_points_parents, dynamics_areas, omega);
+            test_area = 0;
+            for (int i = 0; i < dynamics_areas.size(); i++) test_area += dynamics_areas[i];
+            if (abs(test_area - 4 * M_PI) > pow(10, -8)) cout << "wrong area: " << setprecision(15) << test_area << endl;
+            project_points(run_information, dynamics_state, omega);
             c_1.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
             c_2.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
             c_3.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
             c_4.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
             c1234.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
             inter_state.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+            // cout << "here 0 " << count_nans(dynamics_state) << endl;
         }
 
         if (run_information.use_amr and run_information.use_fast) {
@@ -147,10 +153,15 @@ int main() {
             tree_traverse(run_information, fast_sum_tree_tri_points, fast_sum_icos_tri_info, fast_sum_tree_interactions);
             // cout << "here 2" << endl;
         }
-        // cout << "here 1" << endl;
+        // if (t==1) {
+        //     cout << "4570:" << dynamics_points_parents[4570][0] << " " << dynamics_points_parents[4570][1] << endl;
+        //     cout << "4590:" << dynamics_points_parents[4590][0] << " " << dynamics_points_parents[4590][1] << endl;
+        // }
+        // cout << "here 1 " << count_nans(dynamics_state) << endl;
         rhs_func(run_information, c_1, dynamics_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_1
         // cout << "here 1.5" << endl;
         inter_state = c_1; // k_1
+        // cout << "here 1 1 " << count_nans(c_1) << endl;
         scalar_mult(inter_state, run_information.delta_t / 2.0); // delta_t/2*k1
         vec_add(inter_state, dynamics_state); // x+delta_t/2*k1
         project_points(run_information, inter_state, omega);
@@ -165,7 +176,7 @@ int main() {
         vec_add(inter_state, dynamics_state); // x + delta_t * k_3
         project_points(run_information, inter_state, omega);
         rhs_func(run_information, c_4, inter_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_4
-        // cout << "here 2 " << endl;
+        // cout << "here 2 " << count_nans(c_4) << endl;
         c1234 = c_1;
         scalar_mult(c_2, 2);
         scalar_mult(c_3, 2);
@@ -186,17 +197,23 @@ int main() {
             // vec_add(c1234, c_3);
             // vec_add(c1234, c_4);
             // scalar_mult(c1234, run_information.delta_t / 6.0); // RK4 update
-            vec_add(dynamics_state, c1234);
-            project_points(run_information, dynamics_state, omega);
+            // vec_add(dynamics_state, c1234);
+            // project_points(run_information, dynamics_state, omega);
+            vec_add(c1234, dynamics_state);
+            project_points(run_information, c1234, omega);
             // cout << "here 1 1" << endl;
             // cout << count_nans(dynamics_state) << endl;
-            amr_wrapper(run_information, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, dynamics_points_parents, dynamics_areas);
-            test_area = 0;
-            for (int i = 0; i < dynamics_areas.size(); i++) test_area += dynamics_areas[i];
-            if (abs(test_area - 4 * M_PI) > pow(10, -8)) cout << "wrong area: " << setprecision(15) << test_area << endl;
+            // amr_wrapper(run_information, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, dynamics_points_parents, dynamics_areas, omega);
+            // test_area = 0;
+            // for (int i = 0; i < dynamics_areas.size(); i++) test_area += dynamics_areas[i];
+            // if (abs(test_area - 4 * M_PI) > pow(10, -8)) cout << "wrong area: " << setprecision(15) << test_area << endl;
             // cout << "here 1 2" << endl;
             // cout << count_nans(dynamics_state) << endl;
-            project_points(run_information, dynamics_state, omega);
+            // project_points(run_information, dynamics_state, omega);
+            // cout << "here 1 1" << endl;
+            // cout << "dynamics_triangle " << dynamics_triangles[4][1][1] << endl;
+            remesh_points(run_information, dynamics_state, c1234, dynamics_triangles, dynamics_triangles_is_leaf, run_information.dynamics_curr_point_count, omega);
+            // cout << "here 1 2" << endl;
         } else if (run_information.use_remesh) {
             // c1234 = dynamics_state;
             // vec_add(c1234, c_1);
@@ -211,7 +228,7 @@ int main() {
             vec_add(c1234, dynamics_state);
             project_points(run_information, c1234, omega);
             // cout << "here 6" << endl;
-            remesh_points(run_information, dynamics_state, c1234, dynamics_triangles, dynamics_triangles_is_leaf, run_information.dynamics_curr_point_count);
+            remesh_points(run_information, dynamics_state, c1234, dynamics_triangles, dynamics_triangles_is_leaf, run_information.dynamics_curr_point_count, omega);
             // cout << "here 7" << endl;
 
         } else {
