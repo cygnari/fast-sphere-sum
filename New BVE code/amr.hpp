@@ -228,7 +228,7 @@ void new_amr(run_config& run_information, vector<double>& new_dynamics_state, ve
         vector<vector<int>>& new_dynamics_points_parents, vector<vector<int>>& old_dynamics_points_parents,
         vector<double>& dynamics_areas, double omega) {
 
-    int iv, iv1, iv2, iv3, iv12, iv23, iv31;
+    int iv, iv1, iv2, iv3, iv12, iv23, iv31, iv1n, iv2n, iv3n, iv4n, iv5n, iv6n, tri_level, tri_index, super_tri_index;
     vector<double> v, v1, v2, v3, v12, v23, v31, v11, v22, v33;
     double vormin, vormax, vor1, vor2, vor3, tri_area, vor;
     int old_point_count = run_information.dynamics_curr_point_count;
@@ -313,9 +313,18 @@ void new_amr(run_config& run_information, vector<double>& new_dynamics_state, ve
                         iv12 = check_point_exist2(old_dynamics_state, v12, old_point_count, pow(10, -14), run_information.info_per_point);
                         if (iv12 == -1) {
                             // did not exist at previous time step
-                            v12 = v11;
-                            vec_add(v12, v22);
-                            scalar_mult(v12, 0.5);
+                            tie(tri_level, tri_index) = find_leaf_tri(v12, old_dynamics_state, old_dynamics_triangles, old_dynamics_triangles_is_leaf, run_information.info_per_point, run_information.dynamics_levels_max);
+                            super_tri_index = floor(tri_index / 4.0);
+                            iv1n = old_dynamics_triangles[tri_level-1][super_tri_index][0];
+                            iv2n = old_dynamics_triangles[tri_level-1][super_tri_index][1];
+                            iv3n = old_dynamics_triangles[tri_level-1][super_tri_index][2];
+                            iv4n = old_dynamics_triangles[tri_level][4*super_tri_index+3][0];
+                            iv5n = old_dynamics_triangles[tri_level][4*super_tri_index+3][1];
+                            iv6n = old_dynamics_triangles[tri_level][4*super_tri_index+3][2];
+                            v12 = biquadratic_interp(run_information, v12, iv1n, iv2n, iv3n, iv4n, iv5n, iv6n, old_dynamics_state);
+                            // v12 = v11;
+                            // vec_add(v12, v22);
+                            // scalar_mult(v12, 0.5);
                         } else {
                             // existed at previous time step
                             v12 = slice(old_dynamics_state, run_information.info_per_point * iv12, 1, run_information.info_per_point);
@@ -333,9 +342,18 @@ void new_amr(run_config& run_information, vector<double>& new_dynamics_state, ve
                         // iv23 = check_point_exist(old_dynamics_points_parents, old_point_count, min(iv2, iv3), max(iv2, iv3));
                         iv23 = check_point_exist2(old_dynamics_state, v23, old_point_count, pow(10, -14), run_information.info_per_point);
                         if (iv23 == -1) {
-                            v23 = v22;
-                            vec_add(v23, v33);
-                            scalar_mult(v23, 0.5);
+                            // v23 = v22;
+                            // vec_add(v23, v33);
+                            // scalar_mult(v23, 0.5);
+                            tie(tri_level, tri_index) = find_leaf_tri(v23, old_dynamics_state, old_dynamics_triangles, old_dynamics_triangles_is_leaf, run_information.info_per_point, run_information.dynamics_levels_max);
+                            super_tri_index = floor(tri_index / 4.0);
+                            iv1n = old_dynamics_triangles[tri_level-1][super_tri_index][0];
+                            iv2n = old_dynamics_triangles[tri_level-1][super_tri_index][1];
+                            iv3n = old_dynamics_triangles[tri_level-1][super_tri_index][2];
+                            iv4n = old_dynamics_triangles[tri_level][4*super_tri_index+3][0];
+                            iv5n = old_dynamics_triangles[tri_level][4*super_tri_index+3][1];
+                            iv6n = old_dynamics_triangles[tri_level][4*super_tri_index+3][2];
+                            v23 = biquadratic_interp(run_information, v23, iv1n, iv2n, iv3n, iv4n, iv5n, iv6n, old_dynamics_state);
                         } else {
                             v23 = slice(old_dynamics_state, run_information.info_per_point * iv23, 1, run_information.info_per_point);
                         }
@@ -351,9 +369,18 @@ void new_amr(run_config& run_information, vector<double>& new_dynamics_state, ve
                         // iv31 = check_point_exist(old_dynamics_points_parents, old_point_count, min(iv3, iv1), max(iv3, iv1));
                         iv31 = check_point_exist2(old_dynamics_state, v31, old_point_count, pow(10, -14), run_information.info_per_point);
                         if (iv31 == -1) {
-                            v31 = v33;
-                            vec_add(v31, v11);
-                            scalar_mult(v31, 0.5);
+                            // v31 = v33;
+                            // vec_add(v31, v11);
+                            // scalar_mult(v31, 0.5);
+                            tie(tri_level, tri_index) = find_leaf_tri(v31, old_dynamics_state, old_dynamics_triangles, old_dynamics_triangles_is_leaf, run_information.info_per_point, run_information.dynamics_levels_max);
+                            super_tri_index = floor(tri_index / 4.0);
+                            iv1n = old_dynamics_triangles[tri_level-1][super_tri_index][0];
+                            iv2n = old_dynamics_triangles[tri_level-1][super_tri_index][1];
+                            iv3n = old_dynamics_triangles[tri_level-1][super_tri_index][2];
+                            iv4n = old_dynamics_triangles[tri_level][4*super_tri_index+3][0];
+                            iv5n = old_dynamics_triangles[tri_level][4*super_tri_index+3][1];
+                            iv6n = old_dynamics_triangles[tri_level][4*super_tri_index+3][2];
+                            v31 = biquadratic_interp(run_information, v31, iv1n, iv2n, iv3n, iv4n, iv5n, iv6n, old_dynamics_state);
                         } else {
                             v31 = slice(old_dynamics_state, run_information.info_per_point * iv31, 1, run_information.info_per_point);
                         }
