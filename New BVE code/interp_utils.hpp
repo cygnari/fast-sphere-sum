@@ -12,15 +12,6 @@
 #include "general_utils.hpp"
 #include "structs.hpp"
 
-// void tri_interp(int iv1, int iv2, int iv3, vector<double>& v1, vector<double>& v2, vector<double>& v3, vector<double>& curr_state, vector<double>& target_points, vector<double>& curr_target, int i, double omega) {
-//     vector<double> bary;
-//     bary = normalized_barycoords(v1, v2, v3, curr_target);
-//     // interpolate relative vorticity directly
-//     target_points[5 * i + 3] = bary[0] * curr_state[5 * iv1 + 3] + bary[1] * curr_state[5 * iv2 + 3] + bary[2] * curr_state[5 * iv3 + 3];
-//     // interpolate passive tracer
-//     target_points[5 * i + 4] = bary[0] * curr_state[5 * iv1 + 4] + bary[1] * curr_state[5 * iv2 + 4] + bary[2] * curr_state[5 * iv3 + 4];
-// }
-
 void __attribute__((optnone)) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix, local
 // void __attribute__((optimize(0))) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix, on GL
     double delta_x = 1.0 / degree;
@@ -151,8 +142,6 @@ vector<double> biquadratic_interp(run_config& run_information, vector<double>& t
         curr_alphas = slice(tracer_values, 6 * j, 1, 6);
         output_values[4 + j] = interp_eval(curr_alphas, bary_cords[0], bary_cords[1], 2);
     }
-    // for (int i = 0; i < run_information.info_per_point; i++) cout << output_values[i] << ",";
-    // cout << endl;
     return output_values;
 }
 
@@ -162,23 +151,15 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
     vector<double> curr_target;
     int iv1, iv2, iv3, iv4, iv5, iv6, curr_level, tri_loc, super_tri_loc; // , lb, ub;
     double vor1, vor2, vor3, vor4, vor5, vor6, vormax, vormin, vor;
-    // cout << target_points.size() << endl;
     for (int i = 0; i < point_count; i++) {
-        // cout << i << " " << target_points.size() << endl;
-        // cout << i << endl;
 
         curr_target = slice(target_points, run_information.info_per_point * i, 1, 3);
-        // cout << "Here 5 1" << endl;
 
         tie(curr_level, tri_loc) = find_leaf_tri(curr_target, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, run_information.info_per_point, run_information.dynamics_levels_max);
         super_tri_loc = floor(tri_loc / 4.0);
         if (tri_loc == -1) {
             cout << "find error" << endl;
         }
-        // cout << "Here 5 2" << endl;
-        // cout << dynamics_triangles.size() << " " << curr_level << endl;
-        // cout << dynamics_triangles[curr_level-1].size() << " " << super_tri_loc << endl;
-        // cout << dynamics_triangles[curr_level].size() << " " << 4 * super_tri_loc + 3 << endl;
 
         iv1 = dynamics_triangles[curr_level-1][super_tri_loc][0];
         iv2 = dynamics_triangles[curr_level-1][super_tri_loc][1];
@@ -186,21 +167,18 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
         iv4 = dynamics_triangles[curr_level][4*super_tri_loc+3][0];
         iv5 = dynamics_triangles[curr_level][4*super_tri_loc+3][1];
         iv6 = dynamics_triangles[curr_level][4*super_tri_loc+3][2];
+
         vor1 = dynamics_state[run_information.info_per_point * iv1 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv1 + 2];
         vor2 = dynamics_state[run_information.info_per_point * iv2 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv2 + 2];
         vor3 = dynamics_state[run_information.info_per_point * iv3 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv3 + 2];
         vor4 = dynamics_state[run_information.info_per_point * iv4 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv4 + 2];
         vor5 = dynamics_state[run_information.info_per_point * iv5 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv5 + 2];
         vor6 = dynamics_state[run_information.info_per_point * iv6 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv6 + 2];
-        // vor1 = dynamics_state[run_information.info_per_point * iv1 + 3];
-        // vor2 = dynamics_state[run_information.info_per_point * iv2 + 3];
-        // vor3 = dynamics_state[run_information.info_per_point * iv3 + 3];
-        // vor4 = dynamics_state[run_information.info_per_point * iv4 + 3];
-        // vor5 = dynamics_state[run_information.info_per_point * iv5 + 3];
-        // vor6 = dynamics_state[run_information.info_per_point * iv6 + 3];
+
         vormax = max(vor1, max(vor2, max(vor3, max(vor4, max(vor5, vor6)))));
         vormin = min(vor1, min(vor2, min(vor3, min(vor4, min(vor5, vor6)))));
-        if (vormax > 0) {
+
+        if (vormax > 0) { // some leeway
             vormax *= 1.1;
         } else {
             vormax *= 0.9;
@@ -210,12 +188,8 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
         } else {
             vormin *= 1.1;
         }
-        // cout << "Here 5 3" << endl;
-        // vor = curr_target[3] + 2 * omega * curr_target[2];
-
 
         curr_target = biquadratic_interp(run_information, curr_target, iv1, iv2, iv3, iv4, iv5, iv6, dynamics_state);
-        // vor = curr_target[3];
         vor = curr_target[3] + 2 * omega * curr_target[2];
         if ((vor > vormax) or (vor < vormin)) {
             // violate monotonicity, do bilinear interp
@@ -230,9 +204,7 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
             cout << iv1 << "," << iv2 << "," << iv3 << "," << iv4 << "," << iv5 << "," << iv6 << endl;
             cout << curr_target[0] << "," << curr_target[1] << "," << curr_target[2] << endl;
         }
-        // cout << "Here 5 4" << endl;
         vector_copy(target_points, curr_target, run_information.info_per_point * i, run_information.info_per_point);
-        // cout << "Here 5 5" << endl;
     }
 }
 

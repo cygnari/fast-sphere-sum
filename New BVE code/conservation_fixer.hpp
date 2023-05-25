@@ -61,7 +61,6 @@ void vorticity_fix(run_config& run_information, vector<double>& dynamics_state, 
             dynamics_state[run_information.info_per_point * i + 3] = rel_vor;
         }
     } else {
-        // cout << "here" << endl;
         if (prelim_total < 0) {
             for (int i = 0; i < run_information.dynamics_curr_point_count; i++) {
                 capacity += dynamics_areas[i] * (qmax - prelim_abs_vor[i]);
@@ -82,7 +81,6 @@ void vorticity_fix(run_config& run_information, vector<double>& dynamics_state, 
                 dynamics_state[run_information.info_per_point * i + 3] = rel_vor;
             }
         }
-        // cout << capacity << " " << prelim_total << endl;
     }
 }
 
@@ -96,11 +94,6 @@ void reconstruct_safely(run_config& run_information, vector<double>& dynamics_st
     } else {
         cout << "not feasible" << endl;
     }
-    // else {
-    //
-    // }
-
-    // for (int i = 0; i < run_information.dynamics_point_count; i)
 }
 
 void enforce_conservation(run_config& run_information, vector<double>& dynamics_state, vector<double>& dynamics_areas, vector<double>& qmins, vector<double>& qmaxs, vector<double>& target_mass, double omega) {
