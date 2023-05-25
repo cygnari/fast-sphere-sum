@@ -12,20 +12,22 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
         vector<vector<vector<int>>>& dynamics_triangles,
         // vector<vector<vector<int>>>& dynamics_points_adj_triangles,
         // vector<vector<int>>& dynamics_parent_triangles, vector<vector<int>>& dynamics_child_triangles,
-        vector<vector<int>>& dynamics_points_parents,
+        // vector<vector<int>>& dynamics_points_parents,
         vector<vector<bool>>& dynamics_triangles_is_leaf) {
     // creates all the dynamics points and corresponding triangles
     double phi = (1 + sqrt(5)) / 2;
     int iv1, iv2, iv3, iv12, iv23, iv31;
     vector<double> v1, v2, v3, v12, v23, v31;
+    vector<vector<int>> dynamics_points_parents;
     dynamics_state.clear();
     dynamics_triangles.clear();
-    dynamics_points_parents.clear();
+    // dynamics_points_parents.clear();
     dynamics_triangles_is_leaf.clear();
     dynamics_state.resize(run_information.dynamics_initial_points * run_information.info_per_point, 0);
     dynamics_triangles.resize(run_information.dynamics_levels_max);
     dynamics_triangles[0] = vector<vector<int>> (20, vector<int> (4, 0));
     dynamics_points_parents.resize(run_information.dynamics_initial_points, vector<int> (2, -1));
+
     dynamics_triangles_is_leaf.resize(run_information.dynamics_levels_max);
     run_information.dynamics_curr_point_count = 12;
     run_information.dynamics_curr_tri_count = 20;

@@ -25,6 +25,7 @@ void read_run_config(string file_name, run_config& run_information) {
         } else if (word1 == "use_amr") {
             if (stoi(word2) == 1) {
                 run_information.use_amr = true;
+                run_information.use_remesh = true; // amr cannot happen without remeshing
             }
         } else if (word1 == "use_remesh") {
             if (stoi(word2) == 1) {

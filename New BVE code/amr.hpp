@@ -12,7 +12,6 @@
 void amr(run_config& run_information, vector<double>& new_dynamics_state, vector<double>& old_dynamics_state,
         vector<vector<vector<int>>>& new_dynamics_triangles, vector<vector<vector<int>>>& old_dynamics_triangles,
         vector<vector<bool>>& new_dynamics_triangles_is_leaf, vector<vector<bool>>& old_dynamics_triangles_is_leaf,
-        vector<vector<int>>& new_dynamics_points_parents, vector<vector<int>>& old_dynamics_points_parents,
         vector<double>& dynamics_areas, double omega) {
 
     int iv, iv1, iv2, iv3, iv12, iv23, iv31, iv1n, iv2n, iv3n, iv4n, iv5n, iv6n, tri_level, tri_index, super_tri_index;
@@ -24,8 +23,6 @@ void amr(run_config& run_information, vector<double>& new_dynamics_state, vector
     new_dynamics_triangles = old_dynamics_triangles;
     new_dynamics_triangles.resize(run_information.dynamics_levels_min);
     new_dynamics_triangles.resize(run_information.dynamics_levels_max);
-    new_dynamics_points_parents = old_dynamics_points_parents;
-    new_dynamics_points_parents.resize(run_information.dynamics_initial_points);
     dynamics_areas.clear();
     area_initialize(run_information, new_dynamics_state, new_dynamics_triangles, dynamics_areas);
     new_dynamics_triangles_is_leaf.resize(run_information.dynamics_levels_min);
@@ -101,7 +98,6 @@ void amr(run_config& run_information, vector<double>& new_dynamics_state, vector
                         }
                         iv12 = run_information.dynamics_curr_point_count;
                         run_information.dynamics_curr_point_count += 1;
-                        new_dynamics_points_parents.insert(new_dynamics_points_parents.end(), {min(iv1, iv2), max(iv1, iv2)});
                         new_dynamics_state.insert(new_dynamics_state.end(), v12.begin(), v12.end());
                         dynamics_areas.insert(dynamics_areas.end(), tri_area / 6.0);
                     } else {
@@ -125,7 +121,6 @@ void amr(run_config& run_information, vector<double>& new_dynamics_state, vector
                         }
                         iv23 = run_information.dynamics_curr_point_count;
                         run_information.dynamics_curr_point_count += 1;
-                        new_dynamics_points_parents.insert(new_dynamics_points_parents.end(), {min(iv2, iv3), max(iv2, iv3)});
                         new_dynamics_state.insert(new_dynamics_state.end(), v23.begin(), v23.end());
                         dynamics_areas.insert(dynamics_areas.end(), tri_area / 6.0);
                     } else {
@@ -148,7 +143,6 @@ void amr(run_config& run_information, vector<double>& new_dynamics_state, vector
                         }
                         iv31 = run_information.dynamics_curr_point_count;
                         run_information.dynamics_curr_point_count += 1;
-                        new_dynamics_points_parents.insert(new_dynamics_points_parents.end(), {min(iv3, iv1), max(iv3, iv1)});
                         new_dynamics_state.insert(new_dynamics_state.end(), v31.begin(), v31.end());
                         dynamics_areas.insert(dynamics_areas.end(), tri_area / 6.0);
                     } else {
@@ -170,17 +164,15 @@ void amr(run_config& run_information, vector<double>& new_dynamics_state, vector
 }
 
 void amr_wrapper(run_config& run_information, vector<double>& dynamics_state, vector<vector<vector<int>>>& dynamics_triangles,
-        vector<vector<bool>>& dynamics_triangles_is_leaf, vector<vector<int>>& dynamics_points_parents, vector<double>& dynamics_areas, double omega) {
+        vector<vector<bool>>& dynamics_triangles_is_leaf, vector<double>& dynamics_areas, double omega) {
     // wraps amr routine
     vector<double> new_dynamics_state;
     vector<vector<vector<int>>> new_dynamics_triangles;
     vector<vector<bool>> new_dynamics_triangles_is_leaf;
-    vector<vector<int>> new_dynamics_points_parents;
-    amr(run_information, new_dynamics_state, dynamics_state, new_dynamics_triangles, dynamics_triangles, new_dynamics_triangles_is_leaf, dynamics_triangles_is_leaf, new_dynamics_points_parents, dynamics_points_parents, dynamics_areas, omega);
+    amr(run_information, new_dynamics_state, dynamics_state, new_dynamics_triangles, dynamics_triangles, new_dynamics_triangles_is_leaf, dynamics_triangles_is_leaf, dynamics_areas, omega);
     dynamics_state = new_dynamics_state;
     dynamics_triangles = new_dynamics_triangles;
     dynamics_triangles_is_leaf = new_dynamics_triangles_is_leaf;
-    dynamics_points_parents = new_dynamics_points_parents;
 }
 
 #endif
