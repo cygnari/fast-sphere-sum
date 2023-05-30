@@ -151,60 +151,66 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
     vector<double> curr_target;
     int iv1, iv2, iv3, iv4, iv5, iv6, curr_level, tri_loc, super_tri_loc; // , lb, ub;
     double vor1, vor2, vor3, vor4, vor5, vor6, vormax, vormin, vor;
-    for (int i = 0; i < point_count; i++) {
-
-        curr_target = slice(target_points, run_information.info_per_point * i, 1, 3);
-
-        tie(curr_level, tri_loc) = find_leaf_tri(curr_target, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, run_information.info_per_point, run_information.dynamics_levels_max);
-        super_tri_loc = floor(tri_loc / 4.0);
-        if (tri_loc == -1) {
-            cout << "find error" << endl;
-        }
-
-        iv1 = dynamics_triangles[curr_level-1][super_tri_loc][0];
-        iv2 = dynamics_triangles[curr_level-1][super_tri_loc][1];
-        iv3 = dynamics_triangles[curr_level-1][super_tri_loc][2];
-        iv4 = dynamics_triangles[curr_level][4*super_tri_loc+3][0];
-        iv5 = dynamics_triangles[curr_level][4*super_tri_loc+3][1];
-        iv6 = dynamics_triangles[curr_level][4*super_tri_loc+3][2];
-
-        vor1 = dynamics_state[run_information.info_per_point * iv1 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv1 + 2];
-        vor2 = dynamics_state[run_information.info_per_point * iv2 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv2 + 2];
-        vor3 = dynamics_state[run_information.info_per_point * iv3 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv3 + 2];
-        vor4 = dynamics_state[run_information.info_per_point * iv4 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv4 + 2];
-        vor5 = dynamics_state[run_information.info_per_point * iv5 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv5 + 2];
-        vor6 = dynamics_state[run_information.info_per_point * iv6 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv6 + 2];
-
-        vormax = max(vor1, max(vor2, max(vor3, max(vor4, max(vor5, vor6)))));
-        vormin = min(vor1, min(vor2, min(vor3, min(vor4, min(vor5, vor6)))));
-
-        if (vormax > 0) { // some leeway
-            vormax *= 1.1;
+    // for (int i = run_information.particle_lb; i < run_information.particle_ub; i++) {
+    for (int i = 0; i < run_information.dynamics_curr_point_count; i++) {
+        if ((i < run_information.particle_lb) or (i >= run_information.particle_ub)) {
+            curr_target.assign(run_information.info_per_point, 0);
         } else {
-            vormax *= 0.9;
-        }
-        if (vormin > 0) {
-            vormin *= 0.9;
-        } else {
-            vormin *= 1.1;
-        }
-
-        curr_target = biquadratic_interp(run_information, curr_target, iv1, iv2, iv3, iv4, iv5, iv6, dynamics_state);
-        vor = curr_target[3] + 2 * omega * curr_target[2];
-        if ((vor > vormax) or (vor < vormin)) {
-            // violate monotonicity, do bilinear interp
             curr_target = slice(target_points, run_information.info_per_point * i, 1, 3);
-            iv1 = dynamics_triangles[curr_level][tri_loc][0];
-            iv2 = dynamics_triangles[curr_level][tri_loc][1];
-            iv3 = dynamics_triangles[curr_level][tri_loc][2];
-            curr_target = bilinear_interp(run_information, curr_target, iv1, iv2, iv3, dynamics_state);
+            tie(curr_level, tri_loc) = find_leaf_tri(curr_target, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, run_information.info_per_point, run_information.dynamics_levels_max);
+            super_tri_loc = floor(tri_loc / 4.0);
+            if (tri_loc == -1) {
+                cout << "find error" << endl;
+            }
+
+            iv1 = dynamics_triangles[curr_level-1][super_tri_loc][0];
+            iv2 = dynamics_triangles[curr_level-1][super_tri_loc][1];
+            iv3 = dynamics_triangles[curr_level-1][super_tri_loc][2];
+            iv4 = dynamics_triangles[curr_level][4*super_tri_loc+3][0];
+            iv5 = dynamics_triangles[curr_level][4*super_tri_loc+3][1];
+            iv6 = dynamics_triangles[curr_level][4*super_tri_loc+3][2];
+
+            vor1 = dynamics_state[run_information.info_per_point * iv1 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv1 + 2];
+            vor2 = dynamics_state[run_information.info_per_point * iv2 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv2 + 2];
+            vor3 = dynamics_state[run_information.info_per_point * iv3 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv3 + 2];
+            vor4 = dynamics_state[run_information.info_per_point * iv4 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv4 + 2];
+            vor5 = dynamics_state[run_information.info_per_point * iv5 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv5 + 2];
+            vor6 = dynamics_state[run_information.info_per_point * iv6 + 3] + 2 * omega * dynamics_state[run_information.info_per_point * iv6 + 2];
+
+            vormax = max(vor1, max(vor2, max(vor3, max(vor4, max(vor5, vor6)))));
+            vormin = min(vor1, min(vor2, min(vor3, min(vor4, min(vor5, vor6)))));
+
+            if (vormax > 0) { // some leeway
+                vormax *= 1.1;
+            } else {
+                vormax *= 0.9;
+            }
+            if (vormin > 0) {
+                vormin *= 0.9;
+            } else {
+                vormin *= 1.1;
+            }
+
+            curr_target = biquadratic_interp(run_information, curr_target, iv1, iv2, iv3, iv4, iv5, iv6, dynamics_state);
+            vor = curr_target[3] + 2 * omega * curr_target[2];
+            if ((vor > vormax) or (vor < vormin)) {
+                // violate monotonicity, do bilinear interp
+                curr_target = slice(target_points, run_information.info_per_point * i, 1, 3);
+                iv1 = dynamics_triangles[curr_level][tri_loc][0];
+                iv2 = dynamics_triangles[curr_level][tri_loc][1];
+                iv3 = dynamics_triangles[curr_level][tri_loc][2];
+                curr_target = bilinear_interp(run_information, curr_target, iv1, iv2, iv3, dynamics_state);
+            }
+            if (count_nans(curr_target) > 0) {
+                cout << "point: " << i << " level: " << curr_level << " super tri loc " << super_tri_loc << " tri_loc: " << tri_loc << endl;
+                // cout << "process: " << ID << " out of: " << P << endl;
+                cout << iv1 << "," << iv2 << "," << iv3 << "," << iv4 << "," << iv5 << "," << iv6 << endl;
+                cout << curr_target[0] << "," << curr_target[1] << "," << curr_target[2] << endl;
+            }
         }
-        if (count_nans(curr_target) > 0) {
-            cout << "point: " << i << " level: " << curr_level << " super tri loc " << super_tri_loc << " tri_loc: " << tri_loc << endl;
-            cout << iv1 << "," << iv2 << "," << iv3 << "," << iv4 << "," << iv5 << "," << iv6 << endl;
-            cout << curr_target[0] << "," << curr_target[1] << "," << curr_target[2] << endl;
-        }
+
         vector_copy(target_points, curr_target, run_information.info_per_point * i, run_information.info_per_point);
+
     }
 }
 

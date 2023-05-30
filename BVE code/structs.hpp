@@ -5,7 +5,7 @@ using namespace std;
 
 struct run_config {
     // primitive configuration options
-    bool use_mpi = false;
+    // bool use_mpi = false;
     bool use_amr = false;
     bool use_remesh = false;
     bool use_fast = false;
@@ -36,6 +36,12 @@ struct run_config {
     int dynamics_curr_point_count; // current number of points
     int dynamics_curr_tri_count; // current number of triangles
     int tracer_count; // number of tracers
+
+    // mpi info
+    int particle_lb;
+    int particle_ub;
+    int interaction_lb;
+    int interaction_ub;
 };
 
 struct interaction_pair {

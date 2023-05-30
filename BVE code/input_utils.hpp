@@ -18,11 +18,12 @@ void read_run_config(string file_name, run_config& run_information) {
         stringstream str1(line);
         getline(str1, word1, '=');
         getline(str1, word2);
-        if (word1 == "use_mpi") {
-            if (stoi(word2) == 1) {
-                run_information.use_mpi = true;
-            }
-        } else if (word1 == "use_amr") {
+        // if (word1 == "use_mpi") {
+        //     if (stoi(word2) == 1) {
+        //         run_information.use_mpi = true;
+        //     }
+        // } else 
+        if (word1 == "use_amr") {
             if (stoi(word2) == 1) {
                 run_information.use_amr = true;
                 run_information.use_remesh = true; // amr cannot happen without remeshing

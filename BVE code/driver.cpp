@@ -18,16 +18,27 @@
 #include "rhs_utils.hpp"
 #include "conservation_fixer.hpp"
 #include "amr.hpp"
+#include "mpi_utils.hpp"
 
 using namespace std;
 
 double omega = 2 * M_PI;
 
-int main() {
+int main(int argc, char** argv) {
+
+    MPI_Init(&argc, &argv);
+    int P, ID;
+    MPI_Status status;
+    MPI_Win win_c1, win_c2, win_c3, win_c4, win_dynstate;
+    MPI_Comm_size(MPI_COMM_WORLD, &P);
+    MPI_Comm_rank(MPI_COMM_WORLD, &ID);
 
     run_config run_information;
     read_run_config("namelist.txt", run_information); // reads in run configuration information
     double test_area;
+    bool points_same;
+
+    chrono::steady_clock::time_point begin, end;
 
     vector<double> dynamics_state; // list of points and other information in a flattened array
     vector<vector<vector<int>>> dynamics_triangles; // at level i, each entry is a vector which contains the 3 vertices and the refinement level of the triangle
@@ -72,12 +83,19 @@ int main() {
     c1234.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
     inter_state.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
 
+    MPI_Win_create(&c_1[0], run_information.info_per_point * run_information.dynamics_max_points * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_c1);
+    MPI_Win_create(&c_2[0], run_information.info_per_point * run_information.dynamics_max_points * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_c2);
+    MPI_Win_create(&c_3[0], run_information.info_per_point * run_information.dynamics_max_points * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_c3);
+    MPI_Win_create(&c_4[0], run_information.info_per_point * run_information.dynamics_max_points * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_c4);
+    MPI_Win_create(&dynamics_state[0], run_information.info_per_point * run_information.dynamics_max_points * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_dynstate);
+
     string output_filename = to_string(run_information.dynamics_initial_points) + "_" + run_information.initial_vor_condition + "_";
     if (run_information.use_fast) {
         output_filename += "fast_" + to_string(run_information.fast_sum_tree_levels) + "_" + to_string(run_information.fast_sum_theta).substr(0, 3);
     } else output_filename += "direct";
     if (run_information.use_amr) output_filename += "_amr";
-    if (run_information.use_mpi) output_filename += "_mpi";
+    // if (run_information.use_mpi) output_filename += "_mpi";
+    // if (P > 1) out_filename += "_" + to_string()
     if (run_information.use_remesh) output_filename += "_remesh";
     if (run_information.use_fixer) output_filename += "_fixer";
     stringstream ss;
@@ -92,27 +110,42 @@ int main() {
     ofstream write_out3("./run-output/triangles_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // write out the triangles
     ofstream write_out4("./run-output/tri_count_" + output_filename + ".csv", ofstream::out | ofstream::trunc);
 
-    if (run_information.write_output) {
-        write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
-    } else {
-        int info;
-        string name1 = "./run-output/output_" + output_filename + ".csv";
-        string name2 = "./run-output/point_counts_" + output_filename + ".csv";
-        info = remove(name1.c_str());
-        info = remove(name2.c_str());
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (ID == 0) {
+        if (run_information.write_output) {
+            write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
+        } else {
+            int info;
+            string name1 = "./run-output/output_" + output_filename + ".csv";
+            string name2 = "./run-output/point_counts_" + output_filename + ".csv";
+            info = remove(name1.c_str());
+            info = remove(name2.c_str());
+        }
+
+        if (run_information.write_tris) {
+            write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_out3, write_out4);
+        } else {
+            int info;
+            string name3 = "./run-output/triangles_" + output_filename + ".csv";
+            string name4 = "./run-output/tri_count_" + output_filename + ".csv";
+            info = remove(name3.c_str());
+            info = remove(name4.c_str());
+        }
+
+        begin = chrono::steady_clock::now();
     }
 
-    if (run_information.write_tris) {
-        write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_out3, write_out4);
-    } else {
-        int info;
-        string name3 = "./run-output/triangles_" + output_filename + ".csv";
-        string name4 = "./run-output/tri_count_" + output_filename + ".csv";
-        info = remove(name3.c_str());
-        info = remove(name4.c_str());
+    bounds_determine(run_information, P, ID);
+    if (P > 0) { // make sure all processes have the same number of points
+        points_same = test_is_same(run_information.dynamics_curr_point_count);
+        if (not points_same) {
+            if (ID == 0) {
+                cout << "point counts not same across processes" << endl;
+            }
+        }
     }
-
-    chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+    // if (ID == 0)
+    // MPI_Barrier(MPI_COMM_WORLD);
 
     for (int t = 0; t < run_information.time_steps; t++ ) {  // progress the dynamics
         if (run_information.use_amr) {
@@ -127,6 +160,17 @@ int main() {
             c_4.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
             c1234.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
             inter_state.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+            bounds_determine(run_information, P, ID);
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        if (P > 0) { // make sure all processes have the same number of points, do amr the same way
+            points_same = test_is_same(run_information.dynamics_curr_point_count);
+            if (not points_same) {
+                if (ID == 0) {
+                    cout << "point counts not same across processes" << endl;
+                }
+            }
         }
 
         if (run_information.use_amr and run_information.use_fast) {
@@ -136,27 +180,36 @@ int main() {
             fast_sum_tree_point_locs.resize(run_information.fast_sum_tree_levels);
             points_assign(run_information, dynamics_state, fast_sum_icos_verts, fast_sum_icos_tri_verts, fast_sum_tree_tri_points, fast_sum_tree_point_locs);
             tree_traverse(run_information, fast_sum_tree_tri_points, fast_sum_icos_tri_info, fast_sum_tree_interactions);
+            interactions_determine(run_information, P, ID, fast_sum_tree_interactions.size());
         }
+        MPI_Barrier(MPI_COMM_WORLD);
 
         rhs_func(run_information, c_1, dynamics_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_1
+        sync_updates(run_information, c_1, P, ID, &win_c1);
         inter_state = c_1; // k_1
         scalar_mult(inter_state, run_information.delta_t / 2.0); // delta_t/2*k1
         vec_add(inter_state, dynamics_state); // x+delta_t/2*k1
         project_points(run_information, inter_state, omega);
+        MPI_Barrier(MPI_COMM_WORLD);
 
         rhs_func(run_information, c_2, inter_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_2
+        sync_updates(run_information, c_2, P, ID, &win_c2);
         inter_state = c_2; // k_2
         scalar_mult(inter_state, run_information.delta_t / 2.0); // delta_t/2 * k_2
         vec_add(inter_state, dynamics_state); // x+delta_t/2*k2
         project_points(run_information, inter_state, omega);
+        MPI_Barrier(MPI_COMM_WORLD);
 
         rhs_func(run_information, c_3, inter_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_3
+        sync_updates(run_information, c_3, P, ID, &win_c3);
         inter_state = c_3; // k_3
         scalar_mult(inter_state, run_information.delta_t); // delta_t * k_3
         vec_add(inter_state, dynamics_state); // x + delta_t * k_3
         project_points(run_information, inter_state, omega);
+        MPI_Barrier(MPI_COMM_WORLD);
 
         rhs_func(run_information, c_4, inter_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_4
+        sync_updates(run_information, c_4, P, ID, &win_c4);
 
         c1234 = c_1;
         scalar_mult(c_2, 2);
@@ -165,36 +218,58 @@ int main() {
         vec_add(c1234, c_3);
         vec_add(c1234, c_4);
         scalar_mult(c1234, run_information.delta_t / 6.0); // RK4 update
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        if (count_nans(c1234) > 0) {
+            cout << "process: " << ID << " has nans" << endl;
+        }
 
         if (run_information.use_remesh) {
             vec_add(c1234, dynamics_state);
             project_points(run_information, c1234, omega);
             remesh_points(run_information, dynamics_state, c1234, dynamics_triangles, dynamics_triangles_is_leaf, run_information.dynamics_curr_point_count, omega);
+            // sync_dyn_state(run_information, dynamics_state, P, ID, &win_dynstate);
+            sync_updates(run_information, dynamics_state, P, ID, &win_dynstate);
         } else {
             vec_add(dynamics_state, c1234);
             project_points(run_information, dynamics_state, omega);
         }
+        MPI_Barrier(MPI_COMM_WORLD);
         if (run_information.use_fixer) {
             enforce_conservation(run_information, dynamics_state, dynamics_areas, qmins, qmaxs, target_mass, omega);
         }
-        if (run_information.write_output) {
+        if (run_information.write_output and (ID == 0)) {
             write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
         }
-        if (run_information.write_tris) {
+        if (run_information.write_tris and (ID == 0)) {
             write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_out3, write_out4);
         }
-        if (count_nans(dynamics_state) > 0) {
+        if ((count_nans(dynamics_state) > 0) and (ID == 0)) {
             cout << "nans present!" << endl;
         }
-        cout << "points: " << run_information.dynamics_curr_point_count << endl;
-        cout << "time: " << t << endl;
+        if (ID == 0) {
+            cout << "points: " << run_information.dynamics_curr_point_count << endl;
+            cout << "time: " << t << endl;
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 
-    chrono::steady_clock::time_point end = chrono::steady_clock::now();
-    cout << "time taken: " << chrono::duration_cast<chrono::microseconds>(end - begin).count() << " microseconds" << endl;
+    if (ID == 0) {
+        end = chrono::steady_clock::now();
+        cout << "time taken: " << chrono::duration_cast<chrono::microseconds>(end - begin).count() << " microseconds" << endl;
+    }
+    // chrono::steady_clock::time_point
+
     write_out1.close();
     write_out2.close();
     write_out3.close();
     write_out4.close();
+
+    MPI_Win_free(&win_c1);
+    MPI_Win_free(&win_c2);
+    MPI_Win_free(&win_c3);
+    MPI_Win_free(&win_c4);
+    MPI_Win_free(&win_dynstate);
+    MPI_Finalize();
     return 0;
 }
