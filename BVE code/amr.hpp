@@ -170,7 +170,7 @@ void amr_wrapper(run_config& run_information, vector<double>& dynamics_state, ve
     vector<vector<vector<int>>> new_dynamics_triangles;
     vector<vector<bool>> new_dynamics_triangles_is_leaf;
     amr(run_information, new_dynamics_state, dynamics_state, new_dynamics_triangles, dynamics_triangles, new_dynamics_triangles_is_leaf, dynamics_triangles_is_leaf, dynamics_areas, omega);
-    dynamics_state = new_dynamics_state;
+    dynamics_state.assign(new_dynamics_state.begin(), new_dynamics_state.end());
     dynamics_triangles = new_dynamics_triangles;
     dynamics_triangles_is_leaf = new_dynamics_triangles_is_leaf;
 }

@@ -26,6 +26,7 @@ struct run_config {
     int info_per_point; // how many doubles each point is, for example, storing x y z vor tracer = 5
     double amr_circ_thresh = 0.005; // threshold for circulation in amr
     double amr_vor_thresh = 0.4; // threshold for vorticity difference in amr
+    int amr_levels;
 
     // derived run config info
     int time_steps; // number of time steps

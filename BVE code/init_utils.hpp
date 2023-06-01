@@ -13,7 +13,7 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
         // vector<vector<vector<int>>>& dynamics_points_adj_triangles,
         // vector<vector<int>>& dynamics_parent_triangles, vector<vector<int>>& dynamics_child_triangles,
         // vector<vector<int>>& dynamics_points_parents,
-        vector<vector<bool>>& dynamics_triangles_is_leaf) {
+        vector<vector<bool>>& dynamics_triangles_is_leaf, vector<vector<bool>>& dynamics_triangles_exists) {
     // creates all the dynamics points and corresponding triangles
     double phi = (1 + sqrt(5)) / 2;
     int iv1, iv2, iv3, iv12, iv23, iv31;
@@ -23,12 +23,14 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
     dynamics_triangles.clear();
     // dynamics_points_parents.clear();
     dynamics_triangles_is_leaf.clear();
-    dynamics_state.resize(run_information.dynamics_initial_points * run_information.info_per_point, 0);
+    // dynamics_state.resize(run_information.dynamics_initial_points * run_information.info_per_point, 0);
+    dynamics_state.resize(run_information.dynamics_max_points * run_information.info_per_point, 0);
     dynamics_triangles.resize(run_information.dynamics_levels_max);
     dynamics_triangles[0] = vector<vector<int>> (20, vector<int> (4, 0));
     dynamics_points_parents.resize(run_information.dynamics_initial_points, vector<int> (2, -1));
 
     dynamics_triangles_is_leaf.resize(run_information.dynamics_levels_max);
+    // dynamics_triangles_exists.resize(run_information.dynamics_levels_max);
     run_information.dynamics_curr_point_count = 12;
     run_information.dynamics_curr_tri_count = 20;
     vector_copy2(dynamics_state, project_to_sphere_2(vector<double> {0, 1, phi}, run_information.radius), 0, 3);
@@ -239,6 +241,28 @@ void fast_sum_icos_init(run_config& run_information, vector<vector<double>>& fas
     fast_sum_icos_tri_verts[0][17].insert(fast_sum_icos_tri_verts[0][17].end(), {6, 9, 10});
     fast_sum_icos_tri_verts[0][18].insert(fast_sum_icos_tri_verts[0][18].end(), {7, 11, 12});
     fast_sum_icos_tri_verts[0][19].insert(fast_sum_icos_tri_verts[0][19].end(), {8, 11, 12});
+
+    double alph = 0.01; // x rot
+    double beta = 0.02; // y rot
+    double gamm = 0.03; // z rot
+
+    vector<vector<double>> rot_mat (3, vector<double> (3, 0));
+
+    rot_mat[0][0] = cos(beta) * cos(gamm);
+    rot_mat[0][1] = sin(alph) * sin(beta) * cos(gamm) - cos(alph) * sin(gamm);
+    rot_mat[0][2] = cos(alph) * sin(beta) * cos(gamm) + sin(alph) * sin(gamm);
+    rot_mat[1][0] = cos(beta) * sin(gamm);
+    rot_mat[1][1] = sin(alph) * sin(beta) * sin(gamm) + cos(alph) * cos(gamm);
+    rot_mat[1][2] = cos(alph) * sin(beta) * sin(gamm) - sin(alph) * cos(gamm);
+    rot_mat[2][0] = -sin(beta);
+    rot_mat[2][1] = sin(alph) * cos(beta);
+    rot_mat[2][2] = cos(alph) * cos(beta);
+
+    for (int i = 0; i < 12; i++) {
+        matvecmult(rot_mat, fast_sum_icos_verts[i]);
+        project_to_sphere(fast_sum_icos_verts[i], run_information.radius);
+    }
+
     for (int i = 0; i < 20; i++) { // info about the first 20 faces
         for (int j = 0; j < 3; j++) fast_sum_icos_tri_verts[0][i][j] -= 1;
         iv1 = fast_sum_icos_tri_verts[0][i][0];

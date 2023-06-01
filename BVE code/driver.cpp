@@ -42,8 +42,8 @@ int main(int argc, char** argv) {
 
     vector<double> dynamics_state; // list of points and other information in a flattened array
     vector<vector<vector<int>>> dynamics_triangles; // at level i, each entry is a vector which contains the 3 vertices and the refinement level of the triangle
-    vector<vector<vector<int>>> dynamics_points_adj_triangles; // for point i, level j, the triangles it touches at that level
     vector<vector<bool>> dynamics_triangles_is_leaf; // at level i, if triangle j is a leaf triangle
+    vector<vector<bool>> dynamics_triangles_exists; // at level i, if triangle j exists
 
     vector<vector<double>> fast_sum_icos_verts; // vertices for the fast sum icosahedron
     vector<vector<vector<double>>> fast_sum_icos_tri_info; // information about fast sum icos triangles
@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
     vector<double> c_4;
     vector<double> c1234;
     vector<double> inter_state;
-    dynamics_points_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf);
+    dynamics_points_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, dynamics_triangles_exists);
     vector<double> dynamics_areas (run_information.dynamics_initial_points, 0);
     area_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_areas); // finds areas for each point
     vorticity_initialize(run_information, dynamics_state, dynamics_areas); // initializes vorticity values for each point
@@ -74,14 +74,15 @@ int main(int argc, char** argv) {
         fast_sum_icos_init(run_information, fast_sum_icos_verts, fast_sum_icos_tri_info, fast_sum_icos_tri_verts);
         points_assign(run_information, dynamics_state, fast_sum_icos_verts, fast_sum_icos_tri_verts, fast_sum_tree_tri_points, fast_sum_tree_point_locs);
         tree_traverse(run_information, fast_sum_tree_tri_points, fast_sum_icos_tri_info, fast_sum_tree_interactions);
+        interactions_determine(run_information, P, ID, fast_sum_tree_interactions.size());
     }
 
-    c_1.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-    c_2.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-    c_3.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-    c_4.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-    c1234.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-    inter_state.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
+    c_1.resize(run_information.dynamics_max_points * run_information.info_per_point);
+    c_2.resize(run_information.dynamics_max_points * run_information.info_per_point);
+    c_3.resize(run_information.dynamics_max_points * run_information.info_per_point);
+    c_4.resize(run_information.dynamics_max_points * run_information.info_per_point);
+    c1234.resize(run_information.dynamics_max_points * run_information.info_per_point);
+    inter_state.resize(run_information.dynamics_max_points * run_information.info_per_point);
 
     MPI_Win_create(&c_1[0], run_information.info_per_point * run_information.dynamics_max_points * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_c1);
     MPI_Win_create(&c_2[0], run_information.info_per_point * run_information.dynamics_max_points * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_c2);
@@ -93,9 +94,7 @@ int main(int argc, char** argv) {
     if (run_information.use_fast) {
         output_filename += "fast_" + to_string(run_information.fast_sum_tree_levels) + "_" + to_string(run_information.fast_sum_theta).substr(0, 3);
     } else output_filename += "direct";
-    if (run_information.use_amr) output_filename += "_amr";
-    // if (run_information.use_mpi) output_filename += "_mpi";
-    // if (P > 1) out_filename += "_" + to_string()
+    if (run_information.use_amr) output_filename += "_amr_" + to_string(run_information.amr_levels);
     if (run_information.use_remesh) output_filename += "_remesh";
     if (run_information.use_fixer) output_filename += "_fixer";
     stringstream ss;
@@ -144,21 +143,14 @@ int main(int argc, char** argv) {
             }
         }
     }
-    // if (ID == 0)
-    // MPI_Barrier(MPI_COMM_WORLD);
 
     for (int t = 0; t < run_information.time_steps; t++ ) {  // progress the dynamics
         if (run_information.use_amr) {
             amr_wrapper(run_information, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, dynamics_areas, omega);
             test_area = 0;
             for (int i = 0; i < dynamics_areas.size(); i++) test_area += dynamics_areas[i];
-            if (abs(test_area - 4 * M_PI) > pow(10, -8)) cout << "wrong area: " << setprecision(15) << test_area << endl;
+            if (abs(test_area - 4 * M_PI) > pow(10, -8)) cout << "thread: " << ID << " wrong area: " << setprecision(15) << test_area << endl;
             project_points(run_information, dynamics_state, omega);
-            c_1.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-            c_2.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-            c_3.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-            c_4.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
-            c1234.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
             inter_state.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
             bounds_determine(run_information, P, ID);
         }
@@ -228,7 +220,6 @@ int main(int argc, char** argv) {
             vec_add(c1234, dynamics_state);
             project_points(run_information, c1234, omega);
             remesh_points(run_information, dynamics_state, c1234, dynamics_triangles, dynamics_triangles_is_leaf, run_information.dynamics_curr_point_count, omega);
-            // sync_dyn_state(run_information, dynamics_state, P, ID, &win_dynstate);
             sync_updates(run_information, dynamics_state, P, ID, &win_dynstate);
         } else {
             vec_add(dynamics_state, c1234);
@@ -258,7 +249,6 @@ int main(int argc, char** argv) {
         end = chrono::steady_clock::now();
         cout << "time taken: " << chrono::duration_cast<chrono::microseconds>(end - begin).count() << " microseconds" << endl;
     }
-    // chrono::steady_clock::time_point
 
     write_out1.close();
     write_out2.close();

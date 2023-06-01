@@ -12,7 +12,6 @@ void rossby_haurwitz_4(run_config& run_information, vector<double>& dynamics_sta
         latlon = lat_lon(curr_pos);
         lat = latlon[0];
         lon = latlon[1];
-        // dynamics_state[run_information.info_per_point * i + 4] = 2 + lat;
         dynamics_state[run_information.info_per_point * i + 3] = 2 * M_PI * sin(lat) / 7.0 + 30.0 * sin(lat) * pow(cos(lat), 4) * cos(4 * lon);
     }
 }
@@ -28,7 +27,6 @@ void gauss_vortex(run_config& run_information, vector<double>& dynamics_state, v
         lat = latlon[0];
         p1 = sphere_to_cart(1.0, M_PI / 2.0 - center_lat, center_lon);
         vec_minus(p1, curr_pos);
-        // curr_state[5 * i + 4] = 2 + lat;
         dynamics_state[run_information.info_per_point * i + 3] = 4 * M_PI * exp(-16 * pow(vec_norm(p1), 2));
     }
     for (int i = 0; i < run_information.dynamics_initial_points; i++) {

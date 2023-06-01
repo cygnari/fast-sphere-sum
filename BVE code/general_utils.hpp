@@ -42,12 +42,12 @@ void scalar_mult(vector<double>& x, double scalar) { // multiplies x by scalar i
 }
 
 void vec_add(vector<double>& x, vector<double>& y) { // adds y to x in place, modifies x
-    assert(x.size() == y.size());
+    assert(x.size() >= y.size());
     for (int i = 0; i < x.size(); i++) x[i] += y[i];
 }
 
 void vec_minus(vector<double>& x, vector<double>& y) { // subtracts y from x in place, modifies x
-    assert(x.size() == y.size());
+    assert(x.size() >= y.size());
     for (int i = 0; i < x.size(); i++) x[i] -= y[i];
 }
 
@@ -70,6 +70,14 @@ void vec_minus2d(vector<vector<double>>& x, vector<vector<double>>& y) {
     for (int i = 0; i < x.size(); i++) {
         assert(x[i].size() == y[i].size());
         for (int j = 0; j < x[i].size(); j++) x[i][j] -= y[i][j];
+    }
+}
+
+void matvecmult(vector<vector<double>>& Amat, vector<double>& xvec) {
+    assert(Amat[0].size() == xvec.size());
+    vector<double> y = xvec;
+    for (int i = 0; i < Amat.size(); i++) {
+        xvec[i] = dot_prod(Amat[i], y);
     }
 }
 
@@ -183,6 +191,11 @@ vector<double> barycoords(vector<double>& p1, vector<double>& p2, vector<double>
     vector<double> mat {p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], p3[0], p3[1], p3[2]};
     vector<int> ipiv(3);
     dgesv_(&dim, &nrhs, &*mat.begin(), &dim, &*ipiv.begin(), &*coords.begin(), &dim, &info);
+    if (info != 0) {
+        coords[0] = -1;
+        coords[1] = -1;
+        coords[2] = -1;
+    }
     return coords;
 }
 
@@ -296,10 +309,10 @@ int check_in_vec(vector<vector<double>>& x, vector<double>& y) { // checks if le
 tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dynamics_state, vector<vector<vector<int>>>& dynamics_triangles,
         vector<vector<bool>>& dynamics_triangles_is_leaf, int info_per_point, int max_level) {
     bool found_leaf_tri = false, found_curr_level;
-    int curr_level = 0;
+    int curr_level = -1;
     int lb = 0;
     int ub = 20;
-    int iv1, iv2, iv3, tri_loc = 0;
+    int iv1, iv2, iv3, tri_loc = -1;
     vector<double> v1, v2, v3, bary_cords;
     vector<double> tri_cent;
     double curr_best_dist = INT_MAX, dist, found_tri_radius;
@@ -381,6 +394,14 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
                 v3 = slice(dynamics_state, info_per_point * iv3, 1, 3);
                 bary_cords = barycoords(v1, v2, v3, target_point);
                 if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -10))) {
+                    if ((i == 6) and (j == 0)) {
+                        cout << "target points: " << target_point[0] << "," << target_point[1] << "," << target_point[2] << endl;
+                        cout << "barycords: " << bary_cords[0] << "," << bary_cords[1] << "," << bary_cords[2] << endl;
+                        cout << "points: " << iv1 << "," << iv2 << "," << iv3 << endl;
+                        cout << "v1: " << v1[0] << "," << v1[1] << "," << v1[2] << endl;
+                        cout << "v2: " << v2[0] << "," << v2[1] << "," << v2[2] << endl;
+                        cout << "v3: " << v3[0] << "," << v3[1] << "," << v3[2] << endl;
+                    }
                     curr_level = i;
                     tri_loc = j;
                     return make_tuple(curr_level, tri_loc);

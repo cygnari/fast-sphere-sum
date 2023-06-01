@@ -21,7 +21,6 @@ void bounds_determine(run_config& run_information, int P, int ID) {
     }
     assertm(total == run_information.dynamics_curr_point_count, "Particle count not correct");
 
-    // for (int )
     ub[0] = particles[0];
     for (int i = 1; i < P; i++) {
         lb[i] = ub[i-1];
@@ -47,7 +46,6 @@ void interactions_determine(run_config& run_information, int P, int ID, int inte
     }
     assertm(total == interaction_count, "Interaction count not correct");
 
-    // for (int )
     ub[0] = interactions[0];
     for (int i = 1; i < P; i++) {
         lb[i] = ub[i-1];
@@ -75,21 +73,6 @@ void sync_updates(run_config& run_information, vector<double>& vals, int P, int 
     MPI_Win_fence(0, *win);
     if (ID != 0) {
         MPI_Get(&vals[0], vals.size(), MPI_DOUBLE, 0, 0, vals.size(), MPI_DOUBLE, *win);
-    }
-    MPI_Win_fence(0, *win);
-    MPI_Barrier(MPI_COMM_WORLD);
-}
-
-void sync_dyn_state(run_config& run_information, vector<double>& dyn_state, int P, int ID, MPI_Win *win) {
-    // sync dynamics state after remeshing
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Win_fence(0, *win);
-    if (ID != 0) {
-        MPI_Put(&dyn_state[run_information.info_per_point * run_information.particle_lb], run_information.info_per_point * (run_information.particle_ub - run_information.particle_lb), MPI_DOUBLE, 0, run_information.info_per_point * run_information.particle_lb, dyn_state.size(), MPI_DOUBLE, *win);
-    }
-    MPI_Win_fence(0, *win);
-    if (ID != 0) {
-        MPI_Get(&dyn_state[0], dyn_state.size(), MPI_DOUBLE, 0, 0, dyn_state.size(), MPI_DOUBLE, *win);
     }
     MPI_Win_fence(0, *win);
     MPI_Barrier(MPI_COMM_WORLD);

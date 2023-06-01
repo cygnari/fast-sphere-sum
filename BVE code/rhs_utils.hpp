@@ -54,18 +54,13 @@ void rhs_func(run_config& run_information, vector<double>& modify, vector<double
         double omega, vector<interaction_pair>& interactions, vector<vector<vector<int>>>& fast_sum_tree_tri_points, vector<vector<vector<int>>>& fast_sum_icos_tri_verts,
         vector<vector<double>>& fast_sum_icos_verts) {
     fill(modify.begin(), modify.end(), 0);
-    // vector<double> modify2 (modify.size(), 0);
     if (run_information.use_fast) {
         rhs_fast_sum(run_information, modify, dynamics_state, dynamics_areas, interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
-    } else { 
+    } else {
         rhs_direct_sum(run_information, modify, dynamics_state, dynamics_areas);
     }
     scalar_mult(modify, -1.0 / (4.0 * M_PI));
     for (int i = 0; i < run_information.dynamics_curr_point_count; i++) modify[run_information.info_per_point * i + 3] = -2 * omega * modify[run_information.info_per_point * i + 2];
-    // MPI_Barrier(MPI_COMM_WORLD);
-    // MPI_Win_fence(0, *win);
-    // MPI_Accumulate(&modify2[0], modify2.size(), MPI_DOUBLE, 0, 0, modify2.size(), MPI_DOUBLE, MPI_SUM, *win);
-    // MPI_Win_fence(0, *win);
 }
 
 void project_points(run_config& run_information, vector<double>& dynamics_state, double omega) {

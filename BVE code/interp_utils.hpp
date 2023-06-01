@@ -132,7 +132,6 @@ vector<double> biquadratic_interp(run_config& run_information, vector<double>& t
     nrhs = 1;
     dgetrs_(&trans, &Num, &nrhs, &*interp_matrix.begin(), &Num, &*ipiv.begin(), &*vorticity_values.begin(), &Num, &info);
     if (info > 0) cout << "biquadratic_interp: " << info << endl;
-    // cout << "here 1 4" << endl;
     nrhs = run_information.tracer_count;
     dgetrs_(&trans, &Num, &nrhs, &*interp_matrix.begin(), &Num, &*ipiv.begin(), &*tracer_values.begin(), &Num, &info);
     if (info > 0) cout << "biquadratic_interp: " << info << endl;
@@ -151,7 +150,6 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
     vector<double> curr_target;
     int iv1, iv2, iv3, iv4, iv5, iv6, curr_level, tri_loc, super_tri_loc; // , lb, ub;
     double vor1, vor2, vor3, vor4, vor5, vor6, vormax, vormin, vor;
-    // for (int i = run_information.particle_lb; i < run_information.particle_ub; i++) {
     for (int i = 0; i < run_information.dynamics_curr_point_count; i++) {
         if ((i < run_information.particle_lb) or (i >= run_information.particle_ub)) {
             curr_target.assign(run_information.info_per_point, 0);
@@ -203,7 +201,6 @@ void remesh_points(run_config& run_information, vector<double>& target_points, v
             }
             if (count_nans(curr_target) > 0) {
                 cout << "point: " << i << " level: " << curr_level << " super tri loc " << super_tri_loc << " tri_loc: " << tri_loc << endl;
-                // cout << "process: " << ID << " out of: " << P << endl;
                 cout << iv1 << "," << iv2 << "," << iv3 << "," << iv4 << "," << iv5 << "," << iv6 << endl;
                 cout << curr_target[0] << "," << curr_target[1] << "," << curr_target[2] << endl;
             }

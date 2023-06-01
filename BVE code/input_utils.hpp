@@ -18,11 +18,6 @@ void read_run_config(string file_name, run_config& run_information) {
         stringstream str1(line);
         getline(str1, word1, '=');
         getline(str1, word2);
-        // if (word1 == "use_mpi") {
-        //     if (stoi(word2) == 1) {
-        //         run_information.use_mpi = true;
-        //     }
-        // } else 
         if (word1 == "use_amr") {
             if (stoi(word2) == 1) {
                 run_information.use_amr = true;
@@ -58,11 +53,11 @@ void read_run_config(string file_name, run_config& run_information) {
             run_information.dynamics_levels_min = stoi(word2);
         } else if (word1 == "amr_levels_max") {
             if (run_information.use_amr) {
-                run_information.dynamics_levels_max = stoi(word2) + run_information.dynamics_levels_min;
+                run_information.amr_levels = stoi(word2);
+                run_information.dynamics_levels_max = run_information.amr_levels + run_information.dynamics_levels_min;
             } else {
                 run_information.dynamics_levels_max = run_information.dynamics_levels_min;
             }
-            // run_information.dynamics_levels_max = stoi(word2) + run_information.dynamics_levels_min;
         } else if (word1 == "initial_vor_condition") {
             run_information.initial_vor_condition = word2;
         } else if (word1 == "fast_sum_cluster_thresh") {

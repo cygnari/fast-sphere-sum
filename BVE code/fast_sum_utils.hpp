@@ -14,12 +14,8 @@ void point_assign(run_config& run_information, vector<double>& point, vector<vec
         vector<vector<int>>& fast_sum_tree_point_locs, int point_id) {
     int iv1, iv2, iv3, lb, ub;
     vector<double> v1, v2, v3;
-    // fast_sum_tree_point_locs.clear();
-    // fast_sum_tree_tri_points.clear();
-    // fast_sum_tree_tri_points.resize(run_information.fast_sum_tree_levels);
-    // fast_sum_tree_point_locs.resize(run_information.fast_sum_tree_levels);
+
     for (int i = 0; i < run_information.fast_sum_tree_levels; i++) {
-        // cout << i << endl;
         if (i > 0) {
             lb = 4 * fast_sum_tree_point_locs[i-1][point_id]; // utilize tree structure to minimize searching
             ub = lb + 4;
