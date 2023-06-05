@@ -5,7 +5,6 @@ using namespace std;
 
 struct run_config {
     // primitive configuration options
-    // bool use_mpi = false;
     bool use_amr = false;
     bool use_remesh = false;
     bool use_fast = false;
@@ -18,15 +17,23 @@ struct run_config {
     int dynamics_levels_min; // initial icosahedron refinement levels, 0 = base icosahedron
     int dynamics_levels_max; // max icosahedron refinement if using amr
     string initial_vor_condition; // initial vorticity distribution
-    int fast_sum_cluster_thresh; // threshold for a triangle being a cluster
-    int fast_sum_tree_levels; // icosahedron levels for fast summation
-    double fast_sum_theta; // well separated threshold
+
     int interp_degree; // interpolation degree
     int interp_point_count; // number of interpolation points
     int info_per_point; // how many doubles each point is, for example, storing x y z vor tracer = 5
     double amr_circ_thresh = 0.005; // threshold for circulation in amr
     double amr_vor_thresh = 0.4; // threshold for vorticity difference in amr
     int amr_levels;
+
+    // fast sum info
+    int fast_sum_cluster_thresh; // threshold for a triangle being a cluster
+    int fast_sum_tree_levels; // icosahedron levels for fast summation
+    double fast_sum_theta; // well separated threshold
+    bool fast_sum_rotate = true; // whether or not to rotate the fast sum grid
+    double fast_sum_rotate_alph = 0.01; // 3 rotation coefficients
+    double fast_sum_rotate_beta = 0.01;
+    double fast_sum_rotate_gamm = 0.01;
+
 
     // derived run config info
     int time_steps; // number of time steps

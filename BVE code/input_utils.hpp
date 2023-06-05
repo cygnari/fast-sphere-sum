@@ -69,14 +69,25 @@ void read_run_config(string file_name, run_config& run_information) {
             }
         } else if (word1 == "fast_sum_theta") {
             run_information.fast_sum_theta = stod(word2);
+        } else if (word1 == "fast_sum_rotate") {
+            if (stoi(word2) == 0) {
+                run_information.fast_sum_rotate = false;
+            }
         } else if (word1 == "interp_degree") {
             run_information.interp_degree = stoi(word2);
-        } else if (word1 == "info_per_point") {
-            run_information.info_per_point = stoi(word2);
+        } else if (word1 == "tracer_count") {
+            run_information.tracer_count = stoi(word2);
+            run_information.info_per_point = run_information.tracer_count + 4;
         } else if (word1 == "amr_vor_thresh") {
             run_information.amr_vor_thresh = stod(word2);
         } else if (word1 == "amr_circ_thresh") {
             run_information.amr_circ_thresh = stod(word2);
+        } else if (word1 == "fast_rot_alph") {
+            run_information.fast_sum_rotate_alph = stod(word2);
+        } else if (word1 == "fast_rot_beta") {
+            run_information.fast_sum_rotate_beta = stod(word2);
+        } else if (word1 == "fast_rot_gamm") {
+            run_information.fast_sum_rotate_gamm = stod(word2);
         } else {
             run_information.time_steps = int(run_information.end_time / run_information.delta_t);
             run_information.dynamics_initial_points = 10 * pow(4, run_information.dynamics_levels_min - 1) + 2;
@@ -85,7 +96,6 @@ void read_run_config(string file_name, run_config& run_information) {
             run_information.dynamics_max_triangles = 20 * pow(4, run_information.dynamics_levels_max - 1);
             run_information.dynamics_curr_point_count = run_information.dynamics_initial_points;
             run_information.dynamics_curr_tri_count = run_information.dynamics_initial_triangles;
-            run_information.tracer_count = run_information.info_per_point - 4;
             run_information.interp_point_count = int((1 + run_information.interp_degree) * (2 + run_information.interp_degree) / 2);
             return;
         }

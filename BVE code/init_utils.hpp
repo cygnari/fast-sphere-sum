@@ -158,6 +158,7 @@ void tracer_initialize(run_config& run_information, vector<double>& dynamics_sta
     vector<double> curr_pos, latlon;
     double lat, lon, hmax=1, hi, r1, r2, r = run_information.radius / 2, b = 0.1, c = 0.8;
     double lonc1 = M_PI / 2, lonc2 = 3 * M_PI / 2, latc1 = 0, latc2 = 0;
+    double poly_a = -0.8, poly_b = 0.9, cos_b;
     for (int i = 0; i < run_information.dynamics_initial_points; i++) {
         curr_pos = slice(dynamics_state, run_information.info_per_point * i, 1, 3); // gets the position of a particle
         latlon = lat_lon(curr_pos);
@@ -178,8 +179,8 @@ void tracer_initialize(run_config& run_information, vector<double>& dynamics_sta
             }
         }
         if (run_information.tracer_count >= 3) {
-            double a = -0.8, b = 0.9, c = dynamics_state[run_information.info_per_point * i + 5];
-            dynamics_state[run_information.info_per_point * i + 6] = a * pow(c, 2) + b;
+            cos_b = dynamics_state[run_information.info_per_point * i + 5];
+            dynamics_state[run_information.info_per_point * i + 6] = poly_a * pow(cos_b, 2) + poly_b;
         }
     }
 }
@@ -242,25 +243,28 @@ void fast_sum_icos_init(run_config& run_information, vector<vector<double>>& fas
     fast_sum_icos_tri_verts[0][18].insert(fast_sum_icos_tri_verts[0][18].end(), {7, 11, 12});
     fast_sum_icos_tri_verts[0][19].insert(fast_sum_icos_tri_verts[0][19].end(), {8, 11, 12});
 
-    double alph = 0.01; // x rot
-    double beta = 0.02; // y rot
-    double gamm = 0.03; // z rot
+    if (run_information.fast_sum_rotate) {
+        // rotate the icosahedron slightly
+        double alph = run_information.fast_sum_rotate_alph; // x rot
+        double beta = run_information.fast_sum_rotate_beta; // y rot
+        double gamm = run_information.fast_sum_rotate_gamm; // z rot
 
-    vector<vector<double>> rot_mat (3, vector<double> (3, 0));
+        vector<vector<double>> rot_mat (3, vector<double> (3, 0));
 
-    rot_mat[0][0] = cos(beta) * cos(gamm);
-    rot_mat[0][1] = sin(alph) * sin(beta) * cos(gamm) - cos(alph) * sin(gamm);
-    rot_mat[0][2] = cos(alph) * sin(beta) * cos(gamm) + sin(alph) * sin(gamm);
-    rot_mat[1][0] = cos(beta) * sin(gamm);
-    rot_mat[1][1] = sin(alph) * sin(beta) * sin(gamm) + cos(alph) * cos(gamm);
-    rot_mat[1][2] = cos(alph) * sin(beta) * sin(gamm) - sin(alph) * cos(gamm);
-    rot_mat[2][0] = -sin(beta);
-    rot_mat[2][1] = sin(alph) * cos(beta);
-    rot_mat[2][2] = cos(alph) * cos(beta);
+        rot_mat[0][0] = cos(beta) * cos(gamm);
+        rot_mat[0][1] = sin(alph) * sin(beta) * cos(gamm) - cos(alph) * sin(gamm);
+        rot_mat[0][2] = cos(alph) * sin(beta) * cos(gamm) + sin(alph) * sin(gamm);
+        rot_mat[1][0] = cos(beta) * sin(gamm);
+        rot_mat[1][1] = sin(alph) * sin(beta) * sin(gamm) + cos(alph) * cos(gamm);
+        rot_mat[1][2] = cos(alph) * sin(beta) * sin(gamm) - sin(alph) * cos(gamm);
+        rot_mat[2][0] = -sin(beta);
+        rot_mat[2][1] = sin(alph) * cos(beta);
+        rot_mat[2][2] = cos(alph) * cos(beta);
 
-    for (int i = 0; i < 12; i++) {
-        matvecmult(rot_mat, fast_sum_icos_verts[i]);
-        project_to_sphere(fast_sum_icos_verts[i], run_information.radius);
+        for (int i = 0; i < 12; i++) {
+            matvecmult(rot_mat, fast_sum_icos_verts[i]);
+            project_to_sphere(fast_sum_icos_verts[i], run_information.radius);
+        }
     }
 
     for (int i = 0; i < 20; i++) { // info about the first 20 faces
