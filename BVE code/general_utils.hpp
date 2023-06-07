@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <tuple>
 #include <iostream>
+#include <iomanip>
+#include <limits.h>
 
 extern "C" { // lapack
     extern int dgesv_(int*,int*,double*,int*,int*,double*,int*,int*);
