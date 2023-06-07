@@ -3,7 +3,7 @@
 #PBS -A UMIC0093
 #PBS -l walltime=00:10:00
 #PBS -q regular
-#PBS -j n
+#PBS -j oe
 #PBS -k eod
 #PBS -m abe
 #PBS -M cygnari@umich.com
