@@ -23,7 +23,7 @@ using namespace std;
 int count_nans(vector<double>& x) {
     int count = 0;
     for (int i = 0; i < x.size(); i++) {
-        if (isnan(x[i])) count +=1;
+        if (std::isnan(x[i])) count +=1;
     }
     return count;
 }
