@@ -9,28 +9,23 @@
 #include "vorticity_functions.hpp"
 
 void dynamics_points_initialize(run_config& run_information, vector<double>& dynamics_state,
-        vector<vector<vector<int>>>& dynamics_triangles,
-        // vector<vector<vector<int>>>& dynamics_points_adj_triangles,
-        // vector<vector<int>>& dynamics_parent_triangles, vector<vector<int>>& dynamics_child_triangles,
-        // vector<vector<int>>& dynamics_points_parents,
-        vector<vector<bool>>& dynamics_triangles_is_leaf, vector<vector<bool>>& dynamics_triangles_exists) {
+        vector<vector<vector<int>>>& dynamics_triangles, vector<vector<bool>>& dynamics_triangles_is_leaf,
+        vector<vector<bool>>& dynamics_triangles_exists) {
     // creates all the dynamics points and corresponding triangles
     double phi = (1 + sqrt(5)) / 2;
     int iv1, iv2, iv3, iv12, iv23, iv31;
     vector<double> v1, v2, v3, v12, v23, v31;
     vector<vector<int>> dynamics_points_parents;
+
     dynamics_state.clear();
     dynamics_triangles.clear();
-    // dynamics_points_parents.clear();
     dynamics_triangles_is_leaf.clear();
-    // dynamics_state.resize(run_information.dynamics_initial_points * run_information.info_per_point, 0);
     dynamics_state.resize(run_information.dynamics_max_points * run_information.info_per_point, 0);
     dynamics_triangles.resize(run_information.dynamics_levels_max);
     dynamics_triangles[0] = vector<vector<int>> (20, vector<int> (4, 0));
     dynamics_points_parents.resize(run_information.dynamics_initial_points, vector<int> (2, -1));
-
     dynamics_triangles_is_leaf.resize(run_information.dynamics_levels_max);
-    // dynamics_triangles_exists.resize(run_information.dynamics_levels_max);
+
     run_information.dynamics_curr_point_count = 12;
     run_information.dynamics_curr_tri_count = 20;
     vector_copy2(dynamics_state, project_to_sphere_2(vector<double> {0, 1, phi}, run_information.radius), 0, 3);
@@ -45,6 +40,7 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
     vector_copy2(dynamics_state, project_to_sphere_2(vector<double> {phi, 0, -1}, run_information.radius), 9 * run_information.info_per_point, 3);
     vector_copy2(dynamics_state, project_to_sphere_2(vector<double> {-phi, 0, 1}, run_information.radius), 10 * run_information.info_per_point, 3);
     vector_copy2(dynamics_state, project_to_sphere_2(vector<double> {-phi, 0, -1}, run_information.radius), 11 * run_information.info_per_point, 3);
+
     dynamics_triangles[0][0].insert(dynamics_triangles[0][0].begin(), {0, 1, 8, 0}); // 0, 1, 2 are indices of the three vertices
     dynamics_triangles[0][1].insert(dynamics_triangles[0][1].begin(), {0, 10, 1, 0}); // 20 starting faces
     dynamics_triangles[0][2].insert(dynamics_triangles[0][2].begin(), {0, 4, 6, 0}); // make sure the points are in CCW order
@@ -65,6 +61,7 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
     dynamics_triangles[0][17].insert(dynamics_triangles[0][17].begin(), {5, 9, 8, 0});
     dynamics_triangles[0][18].insert(dynamics_triangles[0][18].begin(), {6, 11, 10, 0});
     dynamics_triangles[0][19].insert(dynamics_triangles[0][19].begin(), {7, 10, 11, 0});
+
     for (int i = 0; i < run_information.dynamics_levels_min - 1; i++) {
         dynamics_triangles[i+1] = vector<vector<int>> (20 * pow(4, i+1), vector<int> (4, 0));
         for (int j = 0; j < 20 * pow(4, i); j++) {
@@ -120,7 +117,6 @@ void dynamics_points_initialize(run_config& run_information, vector<double>& dyn
         } else {
             dynamics_triangles_is_leaf[i].resize(20 * pow(4, i), false);
         }
-
     }
 }
 

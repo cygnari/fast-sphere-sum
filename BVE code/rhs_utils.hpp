@@ -38,15 +38,17 @@ void rhs_direct_sum(run_config& run_information, vector<double>& modify, vector<
 void rhs_fast_sum(run_config& run_information, vector<double>& modify, vector<double>& curr_state, vector<double>& area,
         vector<interaction_pair>& interactions, vector<vector<vector<int>>>& fast_sum_tree_tri_points, vector<vector<vector<int>>>& fast_sum_icos_tri_verts,
         vector<vector<double>>& fast_sum_icos_verts) {
-    for (int i = run_information.interaction_lb; i < run_information.interaction_ub; i++) {
-        if (interactions[i].type == "pp") pp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points);
-        else if (interactions[i].type == "cp") cp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
-        // else if (interactions[i].type == "pc") pc(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
-        else if (interactions[i].type == "pc") pp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points);
-        // else if (interactions[i].type == "cc") cc(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
-        else if (interactions[i].type == "cc") cp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
-        // else cc(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
-        // else cp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
+    for (int i = 0; i < interactions.size(); i++) {
+        if (i % run_information.mpi_P == run_information.mpi_ID) {
+            if (interactions[i].type == "pp") pp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points);
+            else if (interactions[i].type == "cp") cp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
+            // else if (interactions[i].type == "pc") pc(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
+            else if (interactions[i].type == "pc") pp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points);
+            // else if (interactions[i].type == "cc") cc(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
+            else if (interactions[i].type == "cc") cp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
+            // else cc(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
+            // else cp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts);
+        }
     }
 }
 

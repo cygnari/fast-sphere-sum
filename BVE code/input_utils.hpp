@@ -43,6 +43,10 @@ void read_run_config(string file_name, run_config& run_information) {
             if (stoi(word2) == 1) {
                 run_information.write_tris = true;
             }
+        } else if (word1 == "write_stream") {
+            if (stoi(word2) == 1) {
+                run_information.write_stream = true;
+            }
         } else if (word1 == "radius") {
             run_information.radius = stod(word2);
         } else if (word1 == "end_time") {

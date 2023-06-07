@@ -47,7 +47,21 @@ void clip_assured_sum(run_config& run_information, vector<double>& dynamics_stat
 
 void vorticity_fix(run_config& run_information, vector<double>& dynamics_state, vector<double>& dynamics_areas, double qmin, double qmax, double omega) {
     double capacity = 0, prelim_total = 0, rel_vor, abs_vor;
+    vector<double> prelim_rel_vor (run_information.dynamics_curr_point_count, 0);
+    for (int i = 0; i < run_information.dynamics_curr_point_count; i++) {
+        prelim_rel_vor[i] = dynamics_state[run_information.info_per_point * i + 3];
+        prelim_total += prelim_rel_vor[i] * dynamics_areas[i];
+    }
+    for (int i = 0; i < run_information.dynamics_curr_point_count; i++) {
+        prelim_rel_vor[i] -= prelim_total / (4 * M_PI);
+        dynamics_state[run_information.info_per_point * i + 3] = prelim_rel_vor[i];
+    }
+}
+
+void vorticity_fix_limiter(run_config& run_information, vector<double>& dynamics_state, vector<double>& dynamics_areas, double qmin, double qmax, double omega) {
+    double capacity = 0, prelim_total = 0, rel_vor, abs_vor;
     vector<double> prelim_abs_vor (run_information.dynamics_curr_point_count, 0);
+
     for (int i = 0; i < run_information.dynamics_curr_point_count; i++) {
         rel_vor = dynamics_state[run_information.info_per_point * i + 3];
         abs_vor = rel_vor + 2 * omega * dynamics_state[run_information.info_per_point * i + 2];

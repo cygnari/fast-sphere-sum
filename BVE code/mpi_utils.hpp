@@ -30,31 +30,6 @@ void bounds_determine(run_config& run_information, int P, int ID) {
     run_information.particle_ub = ub[ID];
 }
 
-void interactions_determine(run_config& run_information, int P, int ID, int interaction_count) {
-    // find range of fast sum interactions for each process
-    vector<double> interactions (P, int(interaction_count / P));
-    vector<double> lb (P, 0);
-    vector<double> ub (P, 0);
-    int total = P * int(interaction_count / P);
-    int gap = interaction_count - total;
-    for (int i = 1; i < gap + 1; i++) {
-        interactions[i] += 1;
-    }
-    total = 0;
-    for (int i = 0; i < P; i++) {
-        total += interactions[i];
-    }
-    assertm(total == interaction_count, "Interaction count not correct");
-
-    ub[0] = interactions[0];
-    for (int i = 1; i < P; i++) {
-        lb[i] = ub[i-1];
-        ub[i] = lb[i] + interactions[i];
-    }
-    run_information.interaction_lb = lb[ID];
-    run_information.interaction_ub = ub[ID];
-}
-
 bool test_is_same(int x) { // test if all processes have the same value for a variable
     int p[2];
     p[0] = -x;

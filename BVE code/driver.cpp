@@ -35,6 +35,9 @@ int main(int argc, char** argv) {
 
     run_config run_information;
     read_run_config("namelist.txt", run_information); // reads in run configuration information
+    run_information.mpi_P = P;
+    run_information.mpi_ID = ID;
+
     double test_area;
     bool points_same;
 
@@ -74,7 +77,6 @@ int main(int argc, char** argv) {
         fast_sum_icos_init(run_information, fast_sum_icos_verts, fast_sum_icos_tri_info, fast_sum_icos_tri_verts);
         points_assign(run_information, dynamics_state, fast_sum_icos_verts, fast_sum_icos_tri_verts, fast_sum_tree_tri_points, fast_sum_tree_point_locs);
         tree_traverse(run_information, fast_sum_tree_tri_points, fast_sum_icos_tri_info, fast_sum_tree_interactions);
-        interactions_determine(run_information, P, ID, fast_sum_tree_interactions.size());
     }
 
     c_1.resize(run_information.dynamics_max_points * run_information.info_per_point);
@@ -172,7 +174,6 @@ int main(int argc, char** argv) {
             fast_sum_tree_point_locs.resize(run_information.fast_sum_tree_levels);
             points_assign(run_information, dynamics_state, fast_sum_icos_verts, fast_sum_icos_tri_verts, fast_sum_tree_tri_points, fast_sum_tree_point_locs);
             tree_traverse(run_information, fast_sum_tree_tri_points, fast_sum_icos_tri_info, fast_sum_tree_interactions);
-            interactions_determine(run_information, P, ID, fast_sum_tree_interactions.size());
         }
         MPI_Barrier(MPI_COMM_WORLD);
 

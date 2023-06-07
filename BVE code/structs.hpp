@@ -11,6 +11,7 @@ struct run_config {
     bool use_fixer = false;
     bool write_output = false;
     bool write_tris = false;
+    bool write_stream = false;
     double radius = 1.0;
     double end_time;
     double delta_t; // time step size
@@ -24,6 +25,8 @@ struct run_config {
     double amr_circ_thresh = 0.005; // threshold for circulation in amr
     double amr_vor_thresh = 0.4; // threshold for vorticity difference in amr
     int amr_levels;
+
+
 
     // fast sum info
     int fast_sum_cluster_thresh; // threshold for a triangle being a cluster
@@ -46,10 +49,10 @@ struct run_config {
     int tracer_count; // number of tracers
 
     // mpi info
+    int mpi_P; // total MPI ranks
+    int mpi_ID; // own MPI rank
     int particle_lb;
     int particle_ub;
-    int interaction_lb;
-    int interaction_ub;
 };
 
 struct interaction_pair {
