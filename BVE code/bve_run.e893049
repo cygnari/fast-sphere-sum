@@ -1,3 +1,0 @@
-/usr/local/bin/pbs_shell: line 24: [: /glade/u/home/achen/fast-sphere-sum/BVE: binary operator expected
-/usr/local/bin/pbs_shell: line 33: cd: /glade/u/home/achen/fast-sphere-sum/BVE: No such file or directory
-Cannot change to working directory /glade/u/home/achen/fast-sphere-sum/BVE code
