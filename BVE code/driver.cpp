@@ -1,6 +1,6 @@
 #include <cmath>
 #include <vector>
-#include <Accelerate/Accelerate.h> // lapack on mac
+// #include <Accelerate/Accelerate.h> // lapack on mac
 #include <fstream>
 #include <queue>
 #include <sstream>
