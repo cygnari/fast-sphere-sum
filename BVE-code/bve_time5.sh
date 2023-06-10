@@ -7,10 +7,10 @@
 #PBS -k eod
 #PBS -m abe
 #PBS -M cygnari@umich.edu
-#PBS -l select=1:ncpus=1:mpiprocs=1
+#PBS -l select=1:ncpus=2:mpiprocs=2
 #PBS -l place=group=rack
 
 export TMPDIR=/glade/scratch/$USER/temp
 mkdir -p $TMPDIR
 
-mpirun -np 1 ./driver > run_out5.txt
+mpirun -np 2 ./driver > run_out5.txt
