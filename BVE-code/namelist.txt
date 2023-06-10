@@ -1,6 +1,6 @@
 use_amr=0
 use_remesh=0
-use_fast=0
+use_fast=1
 force_conservative=0
 write_output=0
 write_tris=0
