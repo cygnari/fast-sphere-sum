@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N bve_run
+#PBS -N bve_time5
 #PBS -A UMIC0093
 #PBS -l walltime=12:00:00
 #PBS -q regular
@@ -13,4 +13,4 @@
 export TMPDIR=/glade/scratch/$USER/temp
 mkdir -p $TMPDIR
 
-mpirun -np 1 ./driver > run_out9.txt
+mpirun -np 1 ./driver > run_out5.txt
