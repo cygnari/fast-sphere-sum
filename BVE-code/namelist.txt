@@ -1,6 +1,6 @@
 use_amr=0
 use_remesh=0
-use_fast=0
+use_fast=1
 force_conservative=0
 write_output=0
 write_tris=0
@@ -8,7 +8,7 @@ write_stream=0
 radius=1.0
 end_time=0.01
 delta_t=0.01
-dynamics_levels_min=8
+dynamics_levels_min=6
 amr_levels_max=2
 initial_vor_condition=rh4
 fast_sum_cluster_thresh=10
