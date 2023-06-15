@@ -311,6 +311,7 @@ int check_in_vec(vector<vector<double>>& x, vector<double>& y) { // checks if le
 tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dynamics_state, vector<vector<vector<int>>>& dynamics_triangles,
         vector<vector<bool>>& dynamics_triangles_is_leaf, int info_per_point, int max_level) {
     bool found_leaf_tri = false, found_curr_level;
+    double epsilon = pow(10, -11);
     int curr_level = -1;
     int lb = 0;
     int ub = 20;
@@ -332,7 +333,7 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
             v3 = slice(dynamics_state, info_per_point * iv3, 1, 3);
             bary_cords = barycoords(v1, v2, v3, target_point);
 
-            if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -13))) {
+            if (check_in_tri_thresh(v1, v2, v3, target_point, epsilon)) {
 
                 found_curr_level = true;
                 curr_level = level;
@@ -361,7 +362,7 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
                 v2 = slice(dynamics_state, info_per_point * iv2, 1, 3);
                 v3 = slice(dynamics_state, info_per_point * iv3, 1, 3);
                 bary_cords = barycoords(v1, v2, v3, target_point);
-                if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -13))) {
+                if (check_in_tri_thresh(v1, v2, v3, target_point, epsilon)) {
 
                     found_curr_level = true;
                     curr_level = level;
@@ -395,7 +396,7 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
                 v2 = slice(dynamics_state, info_per_point * iv2, 1, 3);
                 v3 = slice(dynamics_state, info_per_point * iv3, 1, 3);
                 bary_cords = barycoords(v1, v2, v3, target_point);
-                if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -13))) {
+                if (check_in_tri_thresh(v1, v2, v3, target_point, epsilon)) {
                     if ((i == 6) and (j == 0)) {
                         cout << "target points: " << target_point[0] << "," << target_point[1] << "," << target_point[2] << endl;
                         cout << "barycords: " << bary_cords[0] << "," << bary_cords[1] << "," << bary_cords[2] << endl;
