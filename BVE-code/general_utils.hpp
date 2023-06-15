@@ -332,7 +332,7 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
             v3 = slice(dynamics_state, info_per_point * iv3, 1, 3);
             bary_cords = barycoords(v1, v2, v3, target_point);
 
-            if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -10))) {
+            if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -13))) {
 
                 found_curr_level = true;
                 curr_level = level;
@@ -361,7 +361,7 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
                 v2 = slice(dynamics_state, info_per_point * iv2, 1, 3);
                 v3 = slice(dynamics_state, info_per_point * iv3, 1, 3);
                 bary_cords = barycoords(v1, v2, v3, target_point);
-                if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -10))) {
+                if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -13))) {
 
                     found_curr_level = true;
                     curr_level = level;
@@ -395,7 +395,7 @@ tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dyna
                 v2 = slice(dynamics_state, info_per_point * iv2, 1, 3);
                 v3 = slice(dynamics_state, info_per_point * iv3, 1, 3);
                 bary_cords = barycoords(v1, v2, v3, target_point);
-                if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -10))) {
+                if (check_in_tri_thresh(v1, v2, v3, target_point, pow(10, -13))) {
                     if ((i == 6) and (j == 0)) {
                         cout << "target points: " << target_point[0] << "," << target_point[1] << "," << target_point[2] << endl;
                         cout << "barycords: " << bary_cords[0] << "," << bary_cords[1] << "," << bary_cords[2] << endl;
