@@ -311,7 +311,7 @@ int check_in_vec(vector<vector<double>>& x, vector<double>& y) { // checks if le
 tuple<int, int> find_leaf_tri(vector<double>& target_point, vector<double>& dynamics_state, vector<vector<vector<int>>>& dynamics_triangles,
         vector<vector<bool>>& dynamics_triangles_is_leaf, int info_per_point, int max_level) {
     bool found_leaf_tri = false, found_curr_level;
-    double epsilon = pow(10, -11);
+    double epsilon = pow(10, -10);
     int curr_level = -1;
     int lb = 0;
     int ub = 20;
