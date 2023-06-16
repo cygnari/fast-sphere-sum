@@ -37,4 +37,8 @@ void gauss_vortex(run_config& run_information, vector<double>& dynamics_state, v
     }
 }
 
+void ssw_initial(run_config& run_information, vector<double>& dynamics_state, vector<double>& dynamics_areas) {
+    vector<double> curr_pos, latlon, p1;
+}
+
 #endif

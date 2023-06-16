@@ -1,14 +1,6 @@
 #ifndef conserve_H
 #define conserve_H
 
-#include <cmath>
-#include <array>
-#include <vector>
-// #include <Accelerate/Accelerate.h>
-#include <cassert>
-#include <algorithm>
-#include <iostream>
-
 #include "general_utils.hpp"
 #include "structs.hpp"
 
@@ -114,7 +106,8 @@ void enforce_conservation(run_config& run_information, vector<double>& dynamics_
     for (int i = 0; i < run_information.tracer_count; i++) {
         reconstruct_safely(run_information, dynamics_state, dynamics_areas, qmins[i + 1], qmaxs[i + 1], target_mass[i + 1], i);
     }
-    vorticity_fix(run_information, dynamics_state, dynamics_areas, qmins[0], qmaxs[0], omega);
+
+    // vorticity_fix(run_information, dynamics_state, dynamics_areas, qmins[0], qmaxs[0], omega);
 }
 
 #endif

@@ -1,26 +1,18 @@
 #ifndef interp_H
 #define interp_H
 
-#include <cmath>
-#include <array>
-#include <vector>
-// #include <Accelerate/Accelerate.h>
-#include <cassert>
-#include <algorithm>
-#include <iostream>
-
 #include "general_utils.hpp"
 #include "structs.hpp"
 
-// void __attribute__((optnone)) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix, local
-void __attribute__((optimize(0))) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix, on GL
+void __attribute__((optnone)) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix, local
+// void __attribute__((optimize(0))) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix, on GL
     double delta_x = 1.0 / degree;
     int index;
     double a, b, c;
     for (int i = 0; i < degree + 1; i++) {
-        a = 1 - i * delta_x;
         for (int j = 0; j < i + 1; j++) {
             index = i * (i + 1) / 2 + j;
+            a = 1 - i * delta_x;
             c = j * delta_x;
             b = 1 - a - b;
             a = 0.5 * (1 + sin(M_PI / 2 * (2 * a - 1)));

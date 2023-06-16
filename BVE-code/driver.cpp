@@ -1,11 +1,4 @@
-#include <cmath>
-#include <vector>
-// #include <Accelerate/Accelerate.h> // lapack on mac
-#include <fstream>
-#include <queue>
-#include <sstream>
 #include <chrono>
-#include <cassert>
 #include <mpi.h>
 #include <cstdio>
 
@@ -156,6 +149,7 @@ int main(int argc, char** argv) {
             inter_state.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
             bounds_determine(run_information, P, ID);
         }
+
         MPI_Barrier(MPI_COMM_WORLD);
 
         if (P > 0) { // make sure all processes have the same number of points, do amr the same way
@@ -167,7 +161,7 @@ int main(int argc, char** argv) {
             }
         }
 
-        if (run_information.use_amr and run_information.use_fast) {
+        if ((run_information.use_amr or not run_information.use_fast) && run_information.use_fast) {
             fast_sum_tree_point_locs.clear();
             fast_sum_tree_tri_points.clear();
             fast_sum_tree_tri_points.resize(run_information.fast_sum_tree_levels);
@@ -175,6 +169,7 @@ int main(int argc, char** argv) {
             points_assign(run_information, dynamics_state, fast_sum_icos_verts, fast_sum_icos_tri_verts, fast_sum_tree_tri_points, fast_sum_tree_point_locs);
             tree_traverse(run_information, fast_sum_tree_tri_points, fast_sum_icos_tri_info, fast_sum_tree_interactions);
         }
+
         MPI_Barrier(MPI_COMM_WORLD);
 
         rhs_func(run_information, c_1, dynamics_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_1
@@ -229,6 +224,13 @@ int main(int argc, char** argv) {
         MPI_Barrier(MPI_COMM_WORLD);
         if (run_information.use_fixer) {
             enforce_conservation(run_information, dynamics_state, dynamics_areas, qmins, qmaxs, target_mass, omega);
+        }
+        if (run_information.vor_fix) {
+            if (run_information.vor_limiter) {
+                vorticity_fix_limiter(run_information, dynamics_state, dynamics_areas, qmins[0], qmaxs[0], omega);
+            } else {
+                vorticity_fix(run_information, dynamics_state, dynamics_areas, qmins[0], qmaxs[0], omega);
+            }
         }
         if (run_information.write_output and (ID == 0)) {
             write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);

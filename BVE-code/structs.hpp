@@ -9,6 +9,8 @@ struct run_config {
     bool use_remesh = false;
     bool use_fast = false;
     bool use_fixer = false;
+    bool vor_fix = false;
+    bool vor_limiter = false;
     bool write_output = false;
     bool write_tris = false;
     bool write_stream = false;

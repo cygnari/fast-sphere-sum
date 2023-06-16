@@ -1,9 +1,6 @@
 #ifndef init_H
 #define init_H
 
-#include <cmath>
-#include <vector>
-// #include <iostream>
 #include "general_utils.hpp"
 #include "structs.hpp"
 #include "vorticity_functions.hpp"
@@ -146,6 +143,8 @@ void vorticity_initialize(run_config& run_information, vector<double>& dynamics_
         rossby_haurwitz_4(run_information, dynamics_state);
     } else if (run_information.initial_vor_condition == "gv") {
         gauss_vortex(run_information, dynamics_state, dynamics_areas);
+    } else if (run_information.initial_vor_condition == "ssw") {
+        ssw_initial(run_information, dynamics_state, dynamics_areas);
     }
 }
 

@@ -1,9 +1,6 @@
 #ifndef amr_H
 #define amr_H
 
-#include <cmath>
-#include <vector>
-#include <iostream>
 #include "general_utils.hpp"
 #include "structs.hpp"
 #include "interp_utils.hpp"
