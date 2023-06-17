@@ -128,9 +128,10 @@ void tree_traverse(run_config& run_information, vector<vector<vector<int>>>& fas
 }
 
 void pp(run_config& run_information, vector<double>& modify, vector<double>& curr_state, vector<double>& area,
-        interaction_pair& interact, vector<vector<vector<int>>>& fast_sum_tree_tri_points) {
+        interaction_pair& interact, vector<vector<vector<int>>>& fast_sum_tree_tri_points, double time, double omega) {
     int target_i, source_j;
     vector<double> particle_i, particle_j, contribution;
+    double vor;
     for (int i = 0; i < interact.count_target; i++) {
         target_i = fast_sum_tree_tri_points[interact.lev_target][interact.curr_target][i];
         vector<double> pos_change (3, 0);
@@ -140,7 +141,9 @@ void pp(run_config& run_information, vector<double>& modify, vector<double>& cur
             if (target_i != source_j) {
                 particle_j = slice(curr_state, run_information.info_per_point * source_j, 1, 3);
                 contribution = BVE_gfunc(particle_i, particle_j);
-                scalar_mult(contribution, curr_state[run_information.info_per_point * source_j + 3] * area[source_j]);
+                vor = curr_state[run_information.info_per_point * source_j + 3];
+                vor -= vor_force_func(run_information, particle_j, time, omega);
+                scalar_mult(contribution, vor * area[source_j]);
                 vec_add(pos_change, contribution);
             }
         }
@@ -152,11 +155,12 @@ void pp(run_config& run_information, vector<double>& modify, vector<double>& cur
 
 void pc(run_config& run_information, vector<double>& modify, vector<double>& curr_state, vector<double>& area,
         interaction_pair& interact, vector<vector<vector<int>>>& fast_sum_tree_tri_points, vector<vector<vector<int>>>& fast_sum_icos_tri_verts,
-        vector<vector<double>>& fast_sum_icos_verts) {
+        vector<vector<double>>& fast_sum_icos_verts, double time, double omega) {
     vector<double> v1s, v2s, v3s, target_particle, placeholder1, placeholder2, placeholder3, bary_cord, source_particle;
     vector<double> func_vals (3 * run_information.interp_point_count, 0), func_val (3, 0);
     vector<double> alphas_x (run_information.interp_point_count, 0), alphas_y (run_information.interp_point_count, 0), alphas_z (run_information.interp_point_count, 0);
     int iv1s, iv2s, iv3s, point_index;
+    double vor;
     double us, vs;
     char trans = 'N';
     int nrhs = 3, dim = run_information.interp_point_count, info;
@@ -204,19 +208,21 @@ void pc(run_config& run_information, vector<double>& modify, vector<double>& cur
             point_index = fast_sum_tree_tri_points[interact.lev_source][interact.curr_source][j];
             source_particle = slice(curr_state, run_information.info_per_point * point_index, 1, 3);
             bary_cord = barycoords(v1s, v2s, v3s, source_particle);
-            modify[run_information.info_per_point * i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], run_information.interp_degree) * curr_state[run_information.info_per_point * point_index + 3] * area[point_index];
-            modify[run_information.info_per_point * i + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], run_information.interp_degree) * curr_state[run_information.info_per_point * point_index + 3] * area[point_index];
-            modify[run_information.info_per_point * i + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], run_information.interp_degree) * curr_state[run_information.info_per_point * point_index + 3] * area[point_index];
+            vor = curr_state[run_information.info_per_point * point_index + 3];
+            vor -= vor_force_func(run_information, source_particle, time, omega);
+            modify[run_information.info_per_point * i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], run_information.interp_degree) * vor * area[point_index];
+            modify[run_information.info_per_point * i + 1] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], run_information.interp_degree) * vor * area[point_index];
+            modify[run_information.info_per_point * i + 2] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], run_information.interp_degree) * vor * area[point_index];
         }
     }
 }
 
 void cp(run_config& run_information, vector<double>& modify, vector<double>& curr_state, vector<double>& area,
         interaction_pair& interact, vector<vector<vector<int>>>& fast_sum_tree_tri_points, vector<vector<vector<int>>>& fast_sum_icos_tri_verts,
-        vector<vector<double>>& fast_sum_icos_verts) {
+        vector<vector<double>>& fast_sum_icos_verts, double time, double omega) {
     int iv1, iv2, iv3, point_index;
     vector<double> v1, v2, v3, placeholder1, placeholder2, placeholder3, source_particle, target_particle, bary_cord;
-    double u, v;
+    double u, v, vor;
     vector<vector<double>> curr_points (run_information.interp_point_count, vector<double> (3, 0));
     vector<double> interptargets (3 * run_information.interp_point_count, 0), func_val (3, 0);
     char trans = 'N';
@@ -256,10 +262,11 @@ void cp(run_config& run_information, vector<double>& modify, vector<double>& cur
             point_index = fast_sum_tree_tri_points[interact.lev_source][interact.curr_source][j];
             source_particle = slice(curr_state, run_information.info_per_point * point_index, 1, 3);
             func_val = BVE_gfunc(curr_points[i], source_particle);
-
-            interptargets[i] += func_val[0] * curr_state[run_information.info_per_point * point_index + 3] * area[point_index];
-            interptargets[i + run_information.interp_point_count] += func_val[1] * curr_state[run_information.info_per_point * point_index + 3] * area[point_index];
-            interptargets[i + 2 * run_information.interp_point_count] += func_val[2] * curr_state[run_information.info_per_point * point_index + 3] * area[point_index];
+            vor = curr_state[run_information.info_per_point * point_index + 3];
+            vor -= vor_force_func(run_information, source_particle, time, omega);
+            interptargets[i] += func_val[0] * vor * area[point_index];
+            interptargets[i + run_information.interp_point_count] += func_val[1] * vor * area[point_index];
+            interptargets[i + 2 * run_information.interp_point_count] += func_val[2] * vor * area[point_index];
         }
     }
 
@@ -286,10 +293,10 @@ void cp(run_config& run_information, vector<double>& modify, vector<double>& cur
 
 void cc(run_config& run_information, vector<double>& modify, vector<double>& curr_state, vector<double>& area,
         interaction_pair& interact, vector<vector<vector<int>>>& fast_sum_tree_tri_points, vector<vector<vector<int>>>& fast_sum_icos_tri_verts,
-        vector<vector<double>>& fast_sum_icos_verts) {
+        vector<vector<double>>& fast_sum_icos_verts, double time, double omega) {
     int iv1, iv2, iv3, iv1s, iv2s, iv3s, point_index;
     vector<double> v1, v2, v3, placeholder1, placeholder2, placeholder3, v1s, v2s, v3s, func_vals (3 * run_information.interp_point_count, 0), func_val (3, 0), alphas_x (run_information.interp_point_count, 0), alphas_y (run_information.interp_point_count, 0), alphas_z (run_information.interp_point_count, 0);
-    double u, v, us, vs;
+    double u, v, us, vs, vor;
     vector<vector<double>> curr_points (run_information.interp_point_count, vector<double> (3, 0));
     int nrhs = 3, dim = run_information.interp_point_count, info;
     char trans = 'N';
@@ -359,9 +366,11 @@ void cc(run_config& run_information, vector<double>& modify, vector<double>& cur
             point_index = fast_sum_tree_tri_points[interact.lev_source][interact.curr_source][j];
             source_particle = slice(curr_state, run_information.info_per_point * point_index, 1, 3);
             bary_cord = barycoords(v1s, v2s, v3s, source_particle);
-            interptargets[i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], run_information.interp_degree) * curr_state[run_information.info_per_point * point_index + 3] * area[point_index];
-            interptargets[i + run_information.interp_point_count] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], run_information.interp_degree) * curr_state[run_information.info_per_point * point_index + 3] * area[point_index];
-            interptargets[i + 2 * run_information.interp_point_count] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], run_information.interp_degree) * curr_state[run_information.info_per_point * point_index + 3] * area[point_index];
+            vor = curr_state[run_information.info_per_point * point_index + 3];
+            vor -= vor_force_func(run_information, source_particle, time, omega);
+            interptargets[i] += interp_eval(alphas_x, bary_cord[0], bary_cord[1], run_information.interp_degree) * vor * area[point_index];
+            interptargets[i + run_information.interp_point_count] += interp_eval(alphas_y, bary_cord[0], bary_cord[1], run_information.interp_degree) * vor * area[point_index];
+            interptargets[i + 2 * run_information.interp_point_count] += interp_eval(alphas_z, bary_cord[0], bary_cord[1], run_information.interp_degree) * vor * area[point_index];
         }
     }
 

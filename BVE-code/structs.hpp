@@ -20,6 +20,7 @@ struct run_config {
     int dynamics_levels_min; // initial icosahedron refinement levels, 0 = base icosahedron
     int dynamics_levels_max; // max icosahedron refinement if using amr
     string initial_vor_condition; // initial vorticity distribution
+    string vor_forcing; // vorticity forcing, if there is one
 
     int interp_degree; // interpolation degree
     int interp_point_count; // number of interpolation points

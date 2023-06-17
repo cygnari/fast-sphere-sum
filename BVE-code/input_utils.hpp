@@ -71,6 +71,9 @@ void read_run_config(string file_name, run_config& run_information) {
             }
         } else if (word1 == "initial_vor_condition") {
             run_information.initial_vor_condition = word2;
+        } else if (word1 == "vor_force") {
+            // if (word2 )
+            run_information.vor_forcing = word2;
         } else if (word1 == "fast_sum_cluster_thresh") {
             run_information.fast_sum_cluster_thresh = stoi(word2);
         } else if (word1 == "fast_sum_tree_levels") {

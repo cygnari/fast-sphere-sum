@@ -85,7 +85,20 @@ int main(int argc, char** argv) {
     MPI_Win_create(&c_4[0], run_information.info_per_point * run_information.dynamics_max_points * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_c4);
     MPI_Win_create(&dynamics_state[0], run_information.info_per_point * run_information.dynamics_max_points * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_dynstate);
 
+    bounds_determine(run_information, P, ID);
+    if (P > 0) { // make sure all processes have the same number of points
+        points_same = test_is_same(run_information.dynamics_curr_point_count);
+        if (not points_same) {
+            if (ID == 0) {
+                cout << "point counts not same across processes" << endl;
+            }
+        }
+    }
+
     string output_filename = to_string(run_information.dynamics_initial_points) + "_" + run_information.initial_vor_condition + "_";
+    if (run_information.vor_forcing != "none") {
+        output_filename += run_information.vor_forcing + "_";
+    }
     if (run_information.use_fast) {
         output_filename += "fast_" + to_string(run_information.fast_sum_tree_levels) + "_" + to_string(run_information.fast_sum_theta).substr(0, 3);
     } else output_filename += "direct";
@@ -129,17 +142,9 @@ int main(int argc, char** argv) {
         begin = chrono::steady_clock::now();
     }
 
-    bounds_determine(run_information, P, ID);
-    if (P > 0) { // make sure all processes have the same number of points
-        points_same = test_is_same(run_information.dynamics_curr_point_count);
-        if (not points_same) {
-            if (ID == 0) {
-                cout << "point counts not same across processes" << endl;
-            }
-        }
-    }
-
+    double curr_time;
     for (int t = 0; t < run_information.time_steps; t++ ) {  // progress the dynamics
+        curr_time = t * run_information.delta_t;
         if (run_information.use_amr) {
             amr_wrapper(run_information, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, dynamics_areas, omega);
             test_area = 0;
@@ -172,7 +177,7 @@ int main(int argc, char** argv) {
 
         MPI_Barrier(MPI_COMM_WORLD);
 
-        rhs_func(run_information, c_1, dynamics_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_1
+        rhs_func(run_information, c_1, dynamics_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts, curr_time); // RK4 k_1
         sync_updates(run_information, c_1, P, ID, &win_c1);
         inter_state = c_1; // k_1
         scalar_mult(inter_state, run_information.delta_t / 2.0); // delta_t/2*k1
@@ -180,7 +185,7 @@ int main(int argc, char** argv) {
         project_points(run_information, inter_state, omega);
         MPI_Barrier(MPI_COMM_WORLD);
 
-        rhs_func(run_information, c_2, inter_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_2
+        rhs_func(run_information, c_2, inter_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts, curr_time); // RK4 k_2
         sync_updates(run_information, c_2, P, ID, &win_c2);
         inter_state = c_2; // k_2
         scalar_mult(inter_state, run_information.delta_t / 2.0); // delta_t/2 * k_2
@@ -188,7 +193,7 @@ int main(int argc, char** argv) {
         project_points(run_information, inter_state, omega);
         MPI_Barrier(MPI_COMM_WORLD);
 
-        rhs_func(run_information, c_3, inter_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_3
+        rhs_func(run_information, c_3, inter_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts, curr_time); // RK4 k_3
         sync_updates(run_information, c_3, P, ID, &win_c3);
         inter_state = c_3; // k_3
         scalar_mult(inter_state, run_information.delta_t); // delta_t * k_3
@@ -196,7 +201,7 @@ int main(int argc, char** argv) {
         project_points(run_information, inter_state, omega);
         MPI_Barrier(MPI_COMM_WORLD);
 
-        rhs_func(run_information, c_4, inter_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts); // RK4 k_4
+        rhs_func(run_information, c_4, inter_state, dynamics_areas, omega, fast_sum_tree_interactions, fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts, curr_time); // RK4 k_4
         sync_updates(run_information, c_4, P, ID, &win_c4);
 
         c1234 = c_1;
