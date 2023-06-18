@@ -197,6 +197,7 @@ vector<double> barycoords(vector<double>& p1, vector<double>& p2, vector<double>
         coords[0] = -1;
         coords[1] = -1;
         coords[2] = -1;
+        cout << "barycoords: " << info << endl;
     }
     return coords;
 }

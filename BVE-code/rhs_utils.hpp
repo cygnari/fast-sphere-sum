@@ -35,7 +35,7 @@ void rhs_fast_sum(run_config& run_information, vector<double>& modify, vector<do
         vector<interaction_pair>& interactions, vector<vector<vector<int>>>& fast_sum_tree_tri_points, vector<vector<vector<int>>>& fast_sum_icos_tri_verts,
         vector<vector<double>>& fast_sum_icos_verts, double time, double omega) {
     for (int i = 0; i < interactions.size(); i++) {
-        if (i % run_information.mpi_P == run_information.mpi_ID) {
+        if (i % run_information.mpi_P == run_information.mpi_ID) { // evenly split up interactions
             if (interactions[i].type == "pp") pp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, time, omega);
             else if (interactions[i].type == "cp") cp(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts, time, omega);
             // else if (interactions[i].type == "pc") pc(run_information, modify, curr_state, area, interactions[i], fast_sum_tree_tri_points, fast_sum_icos_tri_verts, fast_sum_icos_verts, time, omega);

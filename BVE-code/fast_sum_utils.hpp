@@ -7,6 +7,7 @@
 void point_assign(run_config& run_information, vector<double>& point, vector<vector<double>>& fast_sum_icos_verts,
         vector<vector<vector<int>>>& fast_sum_icos_tri_verts, vector<vector<vector<int>>>& fast_sum_tree_tri_points,
         vector<vector<int>>& fast_sum_tree_point_locs, int point_id) {
+    // find which fast sum triangles each point is in
     int iv1, iv2, iv3, lb, ub;
     vector<double> v1, v2, v3;
 
@@ -37,6 +38,7 @@ void point_assign(run_config& run_information, vector<double>& point, vector<vec
 void points_assign(run_config& run_information, vector<double>& dynamics_state, vector<vector<double>>& fast_sum_icos_verts,
         vector<vector<vector<int>>>& fast_sum_icos_tri_verts, vector<vector<vector<int>>>& fast_sum_tree_tri_points,
         vector<vector<int>>& fast_sum_tree_point_locs) {
+    // assigns each point to triangles in the fast sum tree structure
     vector<double> point;
     for (int i = 0; i < run_information.fast_sum_tree_levels; i++) {
         fast_sum_tree_tri_points[i] = vector<vector<int>> (20 * pow(4, i));
@@ -50,6 +52,7 @@ void points_assign(run_config& run_information, vector<double>& dynamics_state, 
 
 void tree_traverse(run_config& run_information, vector<vector<vector<int>>>& fast_sum_tree_tri_points,
         vector<vector<vector<double>>>& fast_sum_icos_tri_info, vector<interaction_pair>& tree_interactions) {
+    // determines {C,P}-{C,P} interactions
     int curr_source, curr_target, lev_target, lev_source;
     int particle_count_target, particle_count_source;
     vector<double> center_target, center_source;
@@ -129,6 +132,7 @@ void tree_traverse(run_config& run_information, vector<vector<vector<int>>>& fas
 
 void pp(run_config& run_information, vector<double>& modify, vector<double>& curr_state, vector<double>& area,
         interaction_pair& interact, vector<vector<vector<int>>>& fast_sum_tree_tri_points, double time, double omega) {
+    // particle particle interaction
     int target_i, source_j;
     vector<double> particle_i, particle_j, contribution;
     double vor;

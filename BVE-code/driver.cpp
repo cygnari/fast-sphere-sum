@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
     dynamics_points_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, dynamics_triangles_exists);
     vector<double> dynamics_areas (run_information.dynamics_initial_points, 0);
     area_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_areas); // finds areas for each point
-    vorticity_initialize(run_information, dynamics_state, dynamics_areas); // initializes vorticity values for each point
+    vorticity_initialize(run_information, dynamics_state, dynamics_areas, omega); // initializes vorticity values for each point
     tracer_initialize(run_information, dynamics_state); // initializes tracer values for each point
     if (run_information.use_fixer) {
         fixer_init(run_information, dynamics_state, dynamics_areas, qmins, qmaxs, target_mass, omega);
@@ -99,6 +99,7 @@ int main(int argc, char** argv) {
     if (run_information.vor_forcing != "none") {
         output_filename += run_information.vor_forcing + "_";
     }
+    output_filename += to_string(run_information.init_cond_param1) + "_" + to_string(run_information.init_cond_param2) + "_";
     if (run_information.use_fast) {
         output_filename += "fast_" + to_string(run_information.fast_sum_tree_levels) + "_" + to_string(run_information.fast_sum_theta).substr(0, 3);
     } else output_filename += "direct";

@@ -21,15 +21,18 @@ struct run_config {
     int dynamics_levels_max; // max icosahedron refinement if using amr
     string initial_vor_condition; // initial vorticity distribution
     string vor_forcing; // vorticity forcing, if there is one
+    int init_cond_param1; // parameter for initial condition
+    double init_cond_param2; // parameter for initial condition
+    // for RH, ICP1 is wavenumber, ICP2 is wave speed, default ICP1 = 4, ICP2 = 0
+    // for GV, ICP1 is radius parameter, ICP2 is starting latitude * pi, default ICP1 = 1, ICP2 = 0.05
+    // for SSW, ICP1 is forcing wavenumber, ICP2 is forcing duration [days], default ICP1 = 1, ICP2 = 11
 
-    int interp_degree; // interpolation degree
+    int interp_degree; // interpolation degree, can go up to 4
     int interp_point_count; // number of interpolation points
     int info_per_point; // how many doubles each point is, for example, storing x y z vor tracer = 5
     double amr_circ_thresh = 0.005; // threshold for circulation in amr
     double amr_vor_thresh = 0.4; // threshold for vorticity difference in amr
-    int amr_levels;
-
-
+    int amr_levels; // how many levels of AMR are permitted
 
     // fast sum info
     int fast_sum_cluster_thresh; // threshold for a triangle being a cluster
@@ -39,7 +42,6 @@ struct run_config {
     double fast_sum_rotate_alph = 0.01; // 3 rotation coefficients
     double fast_sum_rotate_beta = 0.01;
     double fast_sum_rotate_gamm = 0.01;
-
 
     // derived run config info
     int time_steps; // number of time steps
@@ -54,7 +56,7 @@ struct run_config {
     // mpi info
     int mpi_P; // total MPI ranks
     int mpi_ID; // own MPI rank
-    int particle_lb;
+    int particle_lb; // range of assigned particles
     int particle_ub;
 };
 

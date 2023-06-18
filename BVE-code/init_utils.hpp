@@ -137,14 +137,22 @@ void area_initialize(run_config& run_information, vector<double>& dynamics_state
     }
 }
 
-void vorticity_initialize(run_config& run_information, vector<double>& dynamics_state, vector<double>& dynamics_areas) {
+void vorticity_initialize(run_config& run_information, vector<double>& dynamics_state, vector<double>& dynamics_areas, double omega) {
     // initializes the initial vorticity
-    if (run_information.initial_vor_condition == "rh4") {
-        rossby_haurwitz_4(run_information, dynamics_state);
+    if (run_information.initial_vor_condition == "rh") {
+        rossby_haurwitz(run_information, dynamics_state, omega);
     } else if (run_information.initial_vor_condition == "gv") {
-        gauss_vortex(run_information, dynamics_state, dynamics_areas);
+        gauss_vortex(run_information, dynamics_state);
     } else if (run_information.initial_vor_condition == "ssw") {
-        ssw_initial(run_information, dynamics_state, dynamics_areas);
+        ssw_initial(run_information, dynamics_state);
+    }
+    // ensure initial total vorticity is 0
+    double total_vor;
+    for (int i = 0; i < run_information.dynamics_initial_points; i++) {
+        total_vor += dynamics_state[run_information.info_per_point * i + 3] * dynamics_areas[i]; //
+    }
+    for (int i = 0; i < run_information.dynamics_initial_points; i++) {
+        dynamics_state[run_information.info_per_point * i + 3] -= total_vor / (4.0 * M_PI);
     }
 }
 

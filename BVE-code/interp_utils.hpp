@@ -4,8 +4,8 @@
 #include "general_utils.hpp"
 #include "structs.hpp"
 
-// void __attribute__((optnone)) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix, local
-void __attribute__((optimize(0))) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix, on GL
+// void __attribute__((optimize(0))) fekete_init(vector<vector<double>>& points, int degree)  { // initializes fekete matrix, on GL
+void fekete_init(vector<vector<double>>& points, int degree) {
     double delta_x = 1.0 / degree;
     int index;
     double a, b, c;
