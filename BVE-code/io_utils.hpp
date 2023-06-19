@@ -30,4 +30,27 @@ void write_triangles(run_config& run_information, vector<vector<vector<int>>>& d
     file_writer4 << run_information.dynamics_curr_tri_count << "\n";
 }
 
+string create_config(run_config& run_information) {
+    stringstream ss1, ss2;
+    int precision;
+    string output_filename = to_string(run_information.dynamics_initial_points) + "_" + run_information.initial_vor_condition + "_";
+    if (run_information.vor_forcing != "none") {
+        output_filename += run_information.vor_forcing + "_";
+    }
+    precision = max(int(ceil(-log10(run_information.init_cond_param2))), 0);
+    ss1 << fixed << setprecision(precision) << run_information.init_cond_param2;
+    output_filename += to_string(run_information.init_cond_param1) + "_" + ss1.str() + "_";
+    if (run_information.use_fast) {
+        output_filename += "fast_" + to_string(run_information.fast_sum_tree_levels) + "_" + to_string(run_information.fast_sum_theta).substr(0, 3);
+    } else output_filename += "direct";
+    if (run_information.use_amr) output_filename += "_amr_" + to_string(run_information.amr_levels);
+    if (run_information.use_remesh) output_filename += "_remesh";
+    if (run_information.use_fixer) output_filename += "_fixer";
+
+    precision = max(int(ceil(-log10(run_information.end_time))), 0);
+    ss2 << fixed << setprecision(precision) << run_information.end_time;
+    output_filename += "_" + ss2.str();
+    return output_filename;
+}
+
 #endif
