@@ -113,27 +113,27 @@ int main(int argc, char** argv) {
     ss << fixed << setprecision(precision) << run_information.end_time;
     output_filename += "_" + ss.str();
 
-    // vector<ofstream> write_outs1 (ceil(run_information.end_time));
-    // vector<ofstream> write_outs2 (ceil(run_information.end_time));
-    // vector<ofstream> write_outs3 (ceil(run_information.end_time));
-    // vector<ofstream> write_outs4 (ceil(run_information.end_time));
+    vector<ofstream*> write_outs1 (ceil(run_information.end_time));
+    vector<ofstream*> write_outs2 (ceil(run_information.end_time));
+    vector<ofstream*> write_outs3 (ceil(run_information.end_time));
+    vector<ofstream*> write_outs4 (ceil(run_information.end_time));
 
-    vector<ofstream> write_outs1 (0);
-    vector<ofstream> write_outs2 (0);
-    vector<ofstream> write_outs3 (0);
-    vector<ofstream> write_outs4 (0);
+    // vector<ofstream*> write_outs1 (0);
+    // vector<ofstream*> write_outs2 (0);
+    // vector<ofstream*> write_outs3 (0);
+    // vector<ofstream*> write_outs4 (0);
 
     int writer_index;
 
     for (int i = 0; i < ceil(run_information.end_time); i++) {
-        // write_outs1[i] = ofstream ("./run-output/output_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
-        // write_outs2[i] = ofstream ("./run-output/point_counts_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
-        // write_outs3[i] = ofstream ("./run-output/triangles_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
-        // write_outs4[i] = ofstream ("./run-output/tri_count_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
-        write_outs1.emplace_back(ofstream ("./run-output/output_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
-        write_outs2.emplace_back(ofstream ("./run-output/point_counts_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
-        write_outs3.emplace_back(ofstream ("./run-output/triangles_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
-        write_outs4.emplace_back(ofstream ("./run-output/tri_count_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
+        write_outs1[i] = new ofstream ("./run-output/output_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        write_outs2[i] = new ofstream ("./run-output/point_counts_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        write_outs3[i] = new ofstream ("./run-output/triangles_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        write_outs4[i] = new ofstream ("./run-output/tri_count_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        // write_outs1.emplace_back(ofstream ("./run-output/output_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
+        // write_outs2.emplace_back(ofstream ("./run-output/point_counts_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
+        // write_outs3.emplace_back(ofstream ("./run-output/triangles_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
+        // write_outs4.emplace_back(ofstream ("./run-output/tri_count_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
     }
 
     ofstream write_out_init1("./run-output/output_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
@@ -281,10 +281,10 @@ int main(int argc, char** argv) {
         // curr_time += run_information.delta_t;
         writer_index = floor(curr_time);
         if (run_information.write_output and (ID == 0)) {
-            write_state(run_information, dynamics_state, dynamics_areas, write_outs1[writer_index], write_outs2[writer_index]);
+            write_state(run_information, dynamics_state, dynamics_areas, *write_outs1[writer_index], *write_outs2[writer_index]);
         }
         if (run_information.write_tris and (ID == 0)) {
-            write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_outs3[writer_index], write_outs4[writer_index]);
+            write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, *write_outs3[writer_index], *write_outs4[writer_index]);
         }
         if ((count_nans(dynamics_state) > 0) and (ID == 0)) {
             cout << "nans present!" << endl;
@@ -302,10 +302,10 @@ int main(int argc, char** argv) {
     }
 
     for (int i = 0; i < ceil(run_information.end_time); i++) {
-        write_outs1[i].close();
-        write_outs2[i].close();
-        write_outs3[i].close();
-        write_outs4[i].close();
+        write_outs1[i]->close();
+        write_outs2[i]->close();
+        write_outs3[i]->close();
+        write_outs4[i]->close();
     }
 
     MPI_Win_free(&win_c1);
