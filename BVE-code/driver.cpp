@@ -113,18 +113,27 @@ int main(int argc, char** argv) {
     ss << fixed << setprecision(precision) << run_information.end_time;
     output_filename += "_" + ss.str();
 
-    vector<ofstream> write_outs1 (ceil(run_information.end_time));
-    vector<ofstream> write_outs2 (ceil(run_information.end_time));
-    vector<ofstream> write_outs3 (ceil(run_information.end_time));
-    vector<ofstream> write_outs4 (ceil(run_information.end_time));
+    // vector<ofstream> write_outs1 (ceil(run_information.end_time));
+    // vector<ofstream> write_outs2 (ceil(run_information.end_time));
+    // vector<ofstream> write_outs3 (ceil(run_information.end_time));
+    // vector<ofstream> write_outs4 (ceil(run_information.end_time));
+
+    vector<ofstream> write_outs1 (0);
+    vector<ofstream> write_outs2 (0);
+    vector<ofstream> write_outs3 (0);
+    vector<ofstream> write_outs4 (0);
 
     int writer_index;
 
     for (int i = 0; i < ceil(run_information.end_time); i++) {
-        write_outs1[i] = ofstream ("./run-output/output_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
-        write_outs2[i] = ofstream ("./run-output/point_counts_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
-        write_outs3[i] = ofstream ("./run-output/triangles_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
-        write_outs4[i] = ofstream ("./run-output/tri_count_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        // write_outs1[i] = ofstream ("./run-output/output_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        // write_outs2[i] = ofstream ("./run-output/point_counts_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        // write_outs3[i] = ofstream ("./run-output/triangles_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        // write_outs4[i] = ofstream ("./run-output/tri_count_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        write_outs1.emplace_back(ofstream ("./run-output/output_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
+        write_outs2.emplace_back(ofstream ("./run-output/point_counts_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
+        write_outs3.emplace_back(ofstream ("./run-output/triangles_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
+        write_outs4.emplace_back(ofstream ("./run-output/tri_count_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc));
     }
 
     ofstream write_out_init1("./run-output/output_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
