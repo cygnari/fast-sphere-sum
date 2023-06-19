@@ -11,6 +11,7 @@ struct run_config {
     bool use_fixer = false;
     bool vor_fix = false;
     bool vor_limiter = false;
+    string out_path; // ./run-output/ locally, on Cheyenne, /glade/scratch/achen/bve/
     bool write_output = false;
     bool write_tris = false;
     bool write_stream = false;

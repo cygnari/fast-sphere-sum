@@ -42,6 +42,8 @@ void read_run_config(string file_name, run_config& run_information) {
             if (stoi(word2) >= 2) {
                 run_information.vor_limiter = true;
             }
+        } else if (word1 == "out_path") {
+            run_information.out_path = word2;
         } else if (word1 == "write_output") {
             if (stoi(word2) == 1) {
                 run_information.write_output = true;

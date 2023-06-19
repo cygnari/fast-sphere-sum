@@ -100,20 +100,20 @@ int main(int argc, char** argv) {
     vector<ofstream*> write_outs1 (ceil(run_information.end_time));
     vector<ofstream*> write_outs3 (ceil(run_information.end_time));
 
-    ofstream write_out2("./run-output/point_counts_" + output_filename + ".csv", ofstream::out | ofstream::trunc);
-    ofstream write_out4("./run-output/tri_count_" + output_filename + ".csv", ofstream::out | ofstream::trunc);
+    ofstream write_out2(run_information.out_path + "point_counts_" + output_filename + ".csv", ofstream::out | ofstream::trunc);
+    ofstream write_out4(run_information.out_path + "tri_count_" + output_filename + ".csv", ofstream::out | ofstream::trunc);
 
     int writer_index;
 
     for (int i = 0; i < ceil(run_information.end_time); i++) {
-        write_outs1[i] = new ofstream ("./run-output/output_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
-        write_outs3[i] = new ofstream ("./run-output/triangles_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        write_outs1[i] = new ofstream (run_information.out_path + "output_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        write_outs3[i] = new ofstream (run_information.out_path + "triangles_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
     }
 
-    ofstream write_out_init1("./run-output/output_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
-    ofstream write_out_init2("./run-output/point_counts_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
-    ofstream write_out_init3("./run-output/triangles_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // write out the triangles
-    ofstream write_out_init4("./run-output/tri_count_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc);
+    ofstream write_out_init1(run_information.out_path + "output_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
+    ofstream write_out_init2(run_information.out_path + "point_counts_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
+    ofstream write_out_init3(run_information.out_path + "triangles_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // write out the triangles
+    ofstream write_out_init4(run_information.out_path + "tri_count_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc);
 
     MPI_Barrier(MPI_COMM_WORLD);
     if (ID == 0) {
@@ -121,13 +121,13 @@ int main(int argc, char** argv) {
             write_state(run_information, dynamics_state, dynamics_areas, write_out_init1, write_out_init2);
         } else {
             int info;
-            string name1 = "./run-output/output_" + output_filename + "_init.csv";
-            string name2 = "./run-output/point_counts_" + output_filename + "_init.csv";
+            string name1 = run_information.out_path + "output_" + output_filename + "_init.csv";
+            string name2 = run_information.out_path + "point_counts_" + output_filename + "_init.csv";
             info = remove(name1.c_str());
             info = remove(name2.c_str());
             for (int i = 0; i < ceil(run_information.end_time); i++) {
-                name1 = "./run-output/output_" + output_filename + "_" + to_string(i) + ".csv";
-                name2 = "./run-output/point_counts_" + output_filename + "_" + to_string(i) + ".csv";
+                name1 = run_information.out_path + "output_" + output_filename + "_" + to_string(i) + ".csv";
+                name2 = run_information.out_path + "point_counts_" + output_filename + "_" + to_string(i) + ".csv";
                 info = remove(name1.c_str());
                 info = remove(name2.c_str());
             }
@@ -137,13 +137,13 @@ int main(int argc, char** argv) {
             write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_out_init3, write_out_init4);
         } else {
             int info;
-            string name3 = "./run-output/triangles_" + output_filename + "_init.csv";
-            string name4 = "./run-output/tri_count_" + output_filename + "_init.csv";
+            string name3 = run_information.out_path + "triangles_" + output_filename + "_init.csv";
+            string name4 = run_information.out_path + "tri_count_" + output_filename + "_init.csv";
             info = remove(name3.c_str());
             info = remove(name4.c_str());
             for (int i = 0; i < ceil(run_information.end_time); i++) {
-                name3 = "./run-output/triangles_" + output_filename + "_" + to_string(i) + ".csv";
-                name4 = "./run-output/tri_count_" + output_filename + "_" + to_string(i) + ".csv";
+                name3 = run_information.out_path + "triangles_" + output_filename + "_" + to_string(i) + ".csv";
+                name4 = run_information.out_path + "tri_count_" + output_filename + "_" + to_string(i) + ".csv";
                 info = remove(name3.c_str());
                 info = remove(name4.c_str());
             }
