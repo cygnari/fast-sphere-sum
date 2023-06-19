@@ -15,7 +15,7 @@ struct run_config {
     bool write_tris = false;
     bool write_stream = false;
     double radius = 1.0;
-    double end_time;
+    double end_time; // in days
     double delta_t; // time step size
     int dynamics_levels_min; // initial icosahedron refinement levels, 0 = base icosahedron
     int dynamics_levels_max; // max icosahedron refinement if using amr

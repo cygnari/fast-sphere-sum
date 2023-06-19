@@ -113,35 +113,66 @@ int main(int argc, char** argv) {
     ss << fixed << setprecision(precision) << run_information.end_time;
     output_filename += "_" + ss.str();
 
-    ofstream write_out1("./run-output/output_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
-    ofstream write_out2("./run-output/point_counts_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
-    ofstream write_out3("./run-output/triangles_" + output_filename + ".csv", ofstream::out | ofstream::trunc); // write out the triangles
-    ofstream write_out4("./run-output/tri_count_" + output_filename + ".csv", ofstream::out | ofstream::trunc);
+    vector<ofstream> write_outs1 (ceil(run_information.end_time));
+    vector<ofstream> write_outs2 (ceil(run_information.end_time));
+    vector<ofstream> write_outs3 (ceil(run_information.end_time));
+    vector<ofstream> write_outs4 (ceil(run_information.end_time));
+
+    int writer_index;
+
+    for (int i = 0; i < ceil(run_information.end_time); i++) {
+        write_outs1[i] = ofstream ("./run-output/output_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        write_outs2[i] = ofstream ("./run-output/point_counts_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        write_outs3[i] = ofstream ("./run-output/triangles_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+        write_outs4[i] = ofstream ("./run-output/tri_count_" + output_filename + "_" + to_string(i) + ".csv", ofstream::out | ofstream::trunc);
+    }
+
+    ofstream write_out_init1("./run-output/output_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
+    ofstream write_out_init2("./run-output/point_counts_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
+    ofstream write_out_init3("./run-output/triangles_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // write out the triangles
+    ofstream write_out_init4("./run-output/tri_count_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc);
 
     MPI_Barrier(MPI_COMM_WORLD);
     if (ID == 0) {
         if (run_information.write_output) {
-            write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
+            write_state(run_information, dynamics_state, dynamics_areas, write_out_init1, write_out_init2);
         } else {
             int info;
-            string name1 = "./run-output/output_" + output_filename + ".csv";
-            string name2 = "./run-output/point_counts_" + output_filename + ".csv";
+            string name1 = "./run-output/output_" + output_filename + "_init.csv";
+            string name2 = "./run-output/point_counts_" + output_filename + "_init.csv";
             info = remove(name1.c_str());
             info = remove(name2.c_str());
+            for (int i = 0; i < ceil(run_information.end_time); i++) {
+                name1 = "./run-output/output_" + output_filename + "_" + to_string(i) + ".csv";
+                name2 = "./run-output/point_counts_" + output_filename + "_" + to_string(i) + ".csv";
+                info = remove(name1.c_str());
+                info = remove(name2.c_str());
+            }
         }
 
         if (run_information.write_tris) {
-            write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_out3, write_out4);
+            write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_out_init3, write_out_init4);
         } else {
             int info;
-            string name3 = "./run-output/triangles_" + output_filename + ".csv";
-            string name4 = "./run-output/tri_count_" + output_filename + ".csv";
+            string name3 = "./run-output/triangles_" + output_filename + "_init.csv";
+            string name4 = "./run-output/tri_count_" + output_filename + "_init.csv";
             info = remove(name3.c_str());
             info = remove(name4.c_str());
+            for (int i = 0; i < ceil(run_information.end_time); i++) {
+                name3 = "./run-output/triangles_" + output_filename + "_" + to_string(i) + ".csv";
+                name4 = "./run-output/tri_count_" + output_filename + "_" + to_string(i) + ".csv";
+                info = remove(name3.c_str());
+                info = remove(name4.c_str());
+            }
         }
 
         begin = chrono::steady_clock::now();
     }
+
+    write_out_init1.close();
+    write_out_init2.close();
+    write_out_init3.close();
+    write_out_init4.close();
 
     double curr_time;
     for (int t = 0; t < run_information.time_steps; t++ ) {  // progress the dynamics
@@ -238,11 +269,13 @@ int main(int argc, char** argv) {
                 vorticity_fix(run_information, dynamics_state, dynamics_areas, qmins[0], qmaxs[0], omega);
             }
         }
+        // curr_time += run_information.delta_t;
+        writer_index = floor(curr_time);
         if (run_information.write_output and (ID == 0)) {
-            write_state(run_information, dynamics_state, dynamics_areas, write_out1, write_out2);
+            write_state(run_information, dynamics_state, dynamics_areas, write_outs1[writer_index], write_outs2[writer_index]);
         }
         if (run_information.write_tris and (ID == 0)) {
-            write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_out3, write_out4);
+            write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_outs3[writer_index], write_outs4[writer_index]);
         }
         if ((count_nans(dynamics_state) > 0) and (ID == 0)) {
             cout << "nans present!" << endl;
@@ -259,10 +292,12 @@ int main(int argc, char** argv) {
         cout << "time taken: " << chrono::duration_cast<chrono::microseconds>(end - begin).count() << " microseconds" << endl;
     }
 
-    write_out1.close();
-    write_out2.close();
-    write_out3.close();
-    write_out4.close();
+    for (int i = 0; i < ceil(run_information.end_time); i++) {
+        write_outs1[i].close();
+        write_outs2[i].close();
+        write_outs3[i].close();
+        write_outs4[i].close();
+    }
 
     MPI_Win_free(&win_c1);
     MPI_Win_free(&win_c2);
