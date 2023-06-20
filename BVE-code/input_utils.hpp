@@ -48,6 +48,8 @@ void read_run_config(string file_name, run_config& run_information) {
             if (stoi(word2) == 1) {
                 run_information.write_output = true;
             }
+        } else if (word1 == "write_precision") {
+            run_information.write_precision = stoi(word2);
         } else if (word1 == "write_tris") {
             if (stoi(word2) == 1) {
                 run_information.write_tris = true;

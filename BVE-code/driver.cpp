@@ -15,7 +15,7 @@
 
 using namespace std;
 
-double omega = 2 * M_PI;
+double omega = 2 * M_PI; // 2pi rotation/day
 
 int main(int argc, char** argv) {
 
@@ -52,12 +52,12 @@ int main(int argc, char** argv) {
     vector<double> qmaxs; // max values for absolute vorticity + each tracer
     vector<double> target_mass; // initial surface integral of each tracer
 
-    vector<double> c_1;
-    vector<double> c_2;
-    vector<double> c_3;
-    vector<double> c_4;
-    vector<double> c1234;
-    vector<double> inter_state;
+    vector<double> c_1 (run_information.dynamics_max_points * run_information.info_per_point, 0);
+    vector<double> c_2 (run_information.dynamics_max_points * run_information.info_per_point, 0);
+    vector<double> c_3 (run_information.dynamics_max_points * run_information.info_per_point, 0);
+    vector<double> c_4 (run_information.dynamics_max_points * run_information.info_per_point, 0);
+    vector<double> c1234 (run_information.dynamics_max_points * run_information.info_per_point, 0);
+    vector<double> inter_state (run_information.dynamics_max_points * run_information.info_per_point, 0);
     dynamics_points_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_triangles_is_leaf, dynamics_triangles_exists);
     vector<double> dynamics_areas (run_information.dynamics_initial_points, 0);
     area_initialize(run_information, dynamics_state, dynamics_triangles, dynamics_areas); // finds areas for each point
@@ -71,13 +71,6 @@ int main(int argc, char** argv) {
         points_assign(run_information, dynamics_state, fast_sum_icos_verts, fast_sum_icos_tri_verts, fast_sum_tree_tri_points, fast_sum_tree_point_locs);
         tree_traverse(run_information, fast_sum_tree_tri_points, fast_sum_icos_tri_info, fast_sum_tree_interactions);
     }
-
-    c_1.resize(run_information.dynamics_max_points * run_information.info_per_point);
-    c_2.resize(run_information.dynamics_max_points * run_information.info_per_point);
-    c_3.resize(run_information.dynamics_max_points * run_information.info_per_point);
-    c_4.resize(run_information.dynamics_max_points * run_information.info_per_point);
-    c1234.resize(run_information.dynamics_max_points * run_information.info_per_point);
-    inter_state.resize(run_information.dynamics_max_points * run_information.info_per_point);
 
     MPI_Win_create(&c_1[0], run_information.info_per_point * run_information.dynamics_max_points * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_c1);
     MPI_Win_create(&c_2[0], run_information.info_per_point * run_information.dynamics_max_points * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &win_c2);
@@ -111,51 +104,51 @@ int main(int argc, char** argv) {
     }
 
     ofstream write_out_init1(run_information.out_path + "output_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
-    ofstream write_out_init2(run_information.out_path + "point_counts_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
+    // ofstream write_out_init2(run_information.out_path + "point_counts_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
     ofstream write_out_init3(run_information.out_path + "triangles_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // write out the triangles
-    ofstream write_out_init4(run_information.out_path + "tri_count_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc);
+    // ofstream write_out_init4(run_information.out_path + "tri_count_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc);
 
     MPI_Barrier(MPI_COMM_WORLD);
     if (ID == 0) {
         if (run_information.write_output) {
-            write_state(run_information, dynamics_state, dynamics_areas, write_out_init1, write_out_init2);
+            write_state(run_information, dynamics_state, dynamics_areas, write_out_init1, write_out2);
         } else {
             int info;
             string name1 = run_information.out_path + "output_" + output_filename + "_init.csv";
             string name2 = run_information.out_path + "point_counts_" + output_filename + "_init.csv";
             info = remove(name1.c_str());
             info = remove(name2.c_str());
+            name2 = run_information.out_path + "point_counts_" + output_filename + ".csv";
+            info = remove(name2.c_str());
             for (int i = 0; i < ceil(run_information.end_time); i++) {
                 name1 = run_information.out_path + "output_" + output_filename + "_" + to_string(i) + ".csv";
-                name2 = run_information.out_path + "point_counts_" + output_filename + "_" + to_string(i) + ".csv";
                 info = remove(name1.c_str());
-                info = remove(name2.c_str());
             }
         }
 
         if (run_information.write_tris) {
-            write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_out_init3, write_out_init4);
+            write_triangles(run_information, dynamics_triangles, dynamics_triangles_is_leaf, write_out_init3, write_out4);
         } else {
             int info;
             string name3 = run_information.out_path + "triangles_" + output_filename + "_init.csv";
             string name4 = run_information.out_path + "tri_count_" + output_filename + "_init.csv";
             info = remove(name3.c_str());
             info = remove(name4.c_str());
+            name4 = run_information.out_path + "tri_count_" + output_filename + ".csv";
+            info = remove(name4.c_str());
             for (int i = 0; i < ceil(run_information.end_time); i++) {
                 name3 = run_information.out_path + "triangles_" + output_filename + "_" + to_string(i) + ".csv";
-                name4 = run_information.out_path + "tri_count_" + output_filename + "_" + to_string(i) + ".csv";
                 info = remove(name3.c_str());
-                info = remove(name4.c_str());
             }
         }
-
-        begin = chrono::steady_clock::now();
     }
 
     write_out_init1.close();
-    write_out_init2.close();
     write_out_init3.close();
-    write_out_init4.close();
+
+    if (ID == 0) {
+        begin = chrono::steady_clock::now();
+    }
 
     double curr_time;
     for (int t = 0; t < run_information.time_steps; t++ ) {  // progress the dynamics
@@ -278,6 +271,7 @@ int main(int argc, char** argv) {
         write_outs1[i]->close();
         write_outs3[i]->close();
     }
+
     write_out2.close();
     write_out4.close();
 
