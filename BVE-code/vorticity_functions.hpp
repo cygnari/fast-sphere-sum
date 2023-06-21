@@ -68,9 +68,25 @@ double ssw_force(vector<double>& curr_pos, double time, double omega, int wavenu
     return 0.6 * omega * Afunc * Bfunc * cos(wavenumber * lon);
 }
 
+double ssw_blend(vector<double>& curr_pos, double time, double omega, double time_dur) {
+    double Tp = 4, Tf = Tp + time_dur;
+    if (time < Tp) {
+        return ssw_force(curr_pos, time, omega, 1, time_dur);
+    } else if (time < Tf - Tp) {
+        double ratio = (time - Tp) / (Tf - Tp);
+        return (1 - ratio) * ssw_force(curr_pos, time, omega, 1, time_dur) + ratio * ssw_force(curr_pos, time, omega, 2, time_dur);
+    } else if (Time < Tf) {
+        return ssw_force(curr_pos, time, omega, 2, time_dur);
+    } else {
+        return 0;
+    }
+}
+
 double vor_force_func(run_config& run_information, vector<double>& curr_pos, double time, double omega) {
     if (run_information.vor_forcing == "ssw") {
         return ssw_force(curr_pos, time, omega, run_information.init_cond_param1, run_information.init_cond_param2);
+    } else if (run_information.vor_forcing == "ssw_blend") {
+        return ssw_blend(curr_pos, time, omega, run_information.init_cont_param2);
     } else {
         return 0;
     }

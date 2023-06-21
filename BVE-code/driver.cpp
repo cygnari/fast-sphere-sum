@@ -104,9 +104,7 @@ int main(int argc, char** argv) {
     }
 
     ofstream write_out_init1(run_information.out_path + "output_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // ofstream = output file stream
-    // ofstream write_out_init2(run_information.out_path + "point_counts_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // at each time step, write out the number of points
     ofstream write_out_init3(run_information.out_path + "triangles_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc); // write out the triangles
-    // ofstream write_out_init4(run_information.out_path + "tri_count_" + output_filename + "_init.csv", ofstream::out | ofstream::trunc);
 
     MPI_Barrier(MPI_COMM_WORLD);
     if (ID == 0) {
