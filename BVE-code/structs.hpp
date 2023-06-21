@@ -27,7 +27,7 @@ struct run_config {
     double init_cond_param2; // parameter for initial condition
     // for RH, ICP1 is wavenumber, ICP2 is wave speed, default ICP1 = 4, ICP2 = 0
     // for GV, ICP1 is radius parameter, ICP2 is starting latitude * pi, default ICP1 = 1, ICP2 = 0.05
-    // for SSW, ICP1 is forcing wavenumber, ICP2 is forcing duration [days], default ICP1 = 1, ICP2 = 11
+    // for SSW forcing, ICP1 is forcing wavenumber, ICP2 is forcing duration [days], default ICP1 = 1, ICP2 = 11
 
     int interp_degree; // interpolation degree, can go up to 4
     int interp_point_count; // number of interpolation points

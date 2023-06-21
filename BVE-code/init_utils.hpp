@@ -143,9 +143,10 @@ void vorticity_initialize(run_config& run_information, vector<double>& dynamics_
         rossby_haurwitz(run_information, dynamics_state, omega);
     } else if (run_information.initial_vor_condition == "gv") {
         gauss_vortex(run_information, dynamics_state);
-    } else if (run_information.initial_vor_condition == "ssw") {
-        ssw_initial(run_information, dynamics_state);
+    } else if (run_information.initial_vor_condition == "pv") {
+        polar_vortex(run_information, dynamics_state);
     }
+
     // ensure initial total vorticity is 0
     double total_vor;
     for (int i = 0; i < run_information.dynamics_initial_points; i++) {

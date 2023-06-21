@@ -33,7 +33,7 @@ void gauss_vortex(run_config& run_information, vector<double>& dynamics_state) {
     }
 }
 
-void ssw_initial(run_config& run_information, vector<double>& dynamics_state) {
+void polar_vortex(run_config& run_information, vector<double>& dynamics_state) {
     vector<double> curr_pos, latlon;
     double theta0 = 15.0 * M_PI / 32.0, beta = 1.5;
     double lat, vor;
@@ -75,7 +75,7 @@ double ssw_blend(vector<double>& curr_pos, double time, double omega, double tim
     } else if (time < Tf - Tp) {
         double ratio = (time - Tp) / (Tf - Tp);
         return (1 - ratio) * ssw_force(curr_pos, time, omega, 1, time_dur) + ratio * ssw_force(curr_pos, time, omega, 2, time_dur);
-    } else if (Time < Tf) {
+    } else if (time < Tf) {
         return ssw_force(curr_pos, time, omega, 2, time_dur);
     } else {
         return 0;
@@ -86,7 +86,7 @@ double vor_force_func(run_config& run_information, vector<double>& curr_pos, dou
     if (run_information.vor_forcing == "ssw") {
         return ssw_force(curr_pos, time, omega, run_information.init_cond_param1, run_information.init_cond_param2);
     } else if (run_information.vor_forcing == "ssw_blend") {
-        return ssw_blend(curr_pos, time, omega, run_information.init_cont_param2);
+        return ssw_blend(curr_pos, time, omega, run_information.init_cond_param2);
     } else {
         return 0;
     }
