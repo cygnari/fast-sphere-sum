@@ -65,7 +65,7 @@ double ssw_force(vector<double>& curr_pos, double time, double omega, int wavenu
     if (lat > 0) {
         Bfunc = pow(tan(theta1), 2) / pow(tan(lat), 2) * exp(1 - pow(tan(theta1), 2) / pow(tan(lat), 2));
     }
-    return 0.6 * omega * Afunc * Bfunc * cos(wavenumber * lon) * wavenumber;
+    return 0.6 * omega * Afunc * Bfunc * cos(wavenumber * lon) * pow(wavenumber, 2);
 }
 
 double ssw_blend(vector<double>& curr_pos, double time, double omega, double time_dur) {
