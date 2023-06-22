@@ -84,9 +84,9 @@ double ssw_blend(vector<double>& curr_pos, double time, double omega, double tim
 
 double vor_force_func(run_config& run_information, vector<double>& curr_pos, double time, double omega) {
     if (run_information.vor_forcing == "ssw") {
-        return ssw_force(curr_pos, time, omega, run_information.init_cond_param1, run_information.init_cond_param2);
+        return ssw_force(curr_pos, time, omega, run_information.forcing_param1, run_information.forcing_param2);
     } else if (run_information.vor_forcing == "ssw_blend") {
-        return ssw_blend(curr_pos, time, omega, run_information.init_cond_param2);
+        return ssw_blend(curr_pos, time, omega, run_information.forcing_param2);
     } else {
         return 0;
     }

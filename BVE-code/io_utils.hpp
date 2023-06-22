@@ -31,15 +31,28 @@ void write_triangles(run_config& run_information, vector<vector<vector<int>>>& d
 }
 
 string create_config(run_config& run_information) {
-    stringstream ss1, ss2;
+    stringstream ss1, ss2, ss3;
     int precision;
     string output_filename = to_string(run_information.dynamics_initial_points) + "_" + run_information.initial_vor_condition + "_";
+    if (run_information.init_cond_param1 > 0) {
+        output_filename += to_string(run_information.init_cond_param1) + "_";
+    }
+    if (run_information.init_cond_param2 > 0) {
+        precision = max(int(ceil(-log10(run_information.init_cond_param2))), 0);
+        ss1 << fixed << setprecision(precision) << run_information.init_cond_param2;
+        output_filename += ss1.str() + "_";
+    }
     if (run_information.vor_forcing != "none") {
         output_filename += run_information.vor_forcing + "_";
+        if (run_information.forcing_param1 > 0) {
+            output_filename += to_string(run_information.forcing_param1) + "_";
+        }
+        if (run_information.forcing_param2 > 0) {
+            precision = max(int(ceil(-log10(run_information.forcing_param2))), 0);
+            ss3 << fixed << setprecision(precision) << run_information.forcing_param2;
+            output_filename += ss3.str() + "_";
+        }
     }
-    precision = max(int(ceil(-log10(run_information.init_cond_param2))), 0);
-    ss1 << fixed << setprecision(precision) << run_information.init_cond_param2;
-    output_filename += to_string(run_information.init_cond_param1) + "_" + ss1.str() + "_";
     if (run_information.use_fast) {
         output_filename += "fast_" + to_string(run_information.fast_sum_tree_levels) + "_" + to_string(run_information.fast_sum_theta).substr(0, 3);
     } else output_filename += "direct";
