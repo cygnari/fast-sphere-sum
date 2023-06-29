@@ -145,6 +145,8 @@ void vorticity_initialize(run_config& run_information, vector<double>& dynamics_
         gauss_vortex(run_information, dynamics_state);
     } else if (run_information.initial_vor_condition == "pv") {
         polar_vortex(run_information, dynamics_state);
+    } else if (run_information.initial_vor_condition == "rv") {
+        rankine_vortex(run_information, dynamics_state);
     }
 
     // ensure initial total vorticity is 0

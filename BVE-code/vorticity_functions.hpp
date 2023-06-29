@@ -20,16 +20,39 @@ void rossby_haurwitz(run_config& run_information, vector<double>& dynamics_state
 
 void gauss_vortex(run_config& run_information, vector<double>& dynamics_state) {
     vector<double> curr_pos, latlon, p1;
-    double lat, total_vor = 0.0;
+    double lat, dist;
     double center_lat = run_information.init_cond_param2 * M_PI;
     double center_lon = 0.0;
     for (int i = 0; i < run_information.dynamics_initial_points; i++) {
         curr_pos = slice(dynamics_state, run_information.info_per_point * i, 1, 3); // gets the position of a particle
         latlon = lat_lon(curr_pos);
         lat = latlon[0];
-        p1 = sphere_to_cart(1.0, M_PI / 2.0 - center_lat, center_lon);
+        p1 = sphere_to_cart(run_information.radius, M_PI / 2.0 - center_lat, center_lon);
         vec_minus(p1, curr_pos);
-        dynamics_state[run_information.info_per_point * i + 3] = 4 * M_PI * exp(-pow(run_information.init_cond_param1, 2) * pow(vec_norm(p1), 2));
+        dist = vec_norm(p1);
+        dynamics_state[run_information.info_per_point * i + 3] = 4 * M_PI * exp(-pow(run_information.init_cond_param1, 2) * pow(dist, 2));
+    }
+}
+
+void rankine_vortex(run_config& run_information, vector<double>& dynamics_state) {
+    vector<double> curr_pos, latlon, p1;
+    double lat, dist, val;
+    double center_lat = run_information.init_cond_param2 * M_PI;
+    double center_lon = 0.0;
+    double radius = run_information.init_cond_param1 * 0.01 * run_information.radius;
+    for (int i = 0; i < run_information.dynamics_initial_points; i++) {
+        curr_pos = slice(dynamics_state, run_information.info_per_point * i, 1, 3);
+        latlon = lat_lon(curr_pos);
+        lat = latlon[0];
+        p1 = sphere_to_cart(run_information.radius, M_PI / 2.0 - center_lat, center_lon);
+        vec_minus(p1, curr_pos);
+        dist = vec_norm(p1);
+        if (dist < radius) {
+            val = dist / pow(radius, 2);
+        } else {
+            val = 1.0 / dist;
+        }
+        dynamics_state[run_information.info_per_point * i + 3] = 4 * M_PI * val;
     }
 }
 
@@ -65,7 +88,7 @@ double ssw_force(vector<double>& curr_pos, double time, double omega, int wavenu
     if (lat > 0) {
         Bfunc = pow(tan(theta1), 2) / pow(tan(lat), 2) * exp(1 - pow(tan(theta1), 2) / pow(tan(lat), 2));
     }
-    return 0.6 * omega * Afunc * Bfunc * cos(wavenumber * lon) * pow(wavenumber, 2);
+    return 0.6 * omega * Afunc * Bfunc * cos(wavenumber * lon) * wavenumber;
 }
 
 double ssw_blend(vector<double>& curr_pos, double time, double omega, double time_dur) {
