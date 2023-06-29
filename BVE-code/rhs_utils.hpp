@@ -5,6 +5,7 @@
 #include "fast_sum_utils.hpp"
 #include "structs.hpp"
 #include "vorticity_functions.hpp"
+#include "green_funcs.hpp"
 
 void rhs_direct_sum(run_config& run_information, vector<double>& modify, vector<double>& dynamics_state, vector<double>& dynamics_areas, double time, double omega) { // direct summation for all of RHS
     vector<double> pos_change, particle_i, particle_j, contribution;
@@ -57,7 +58,7 @@ void rhs_func(run_config& run_information, vector<double>& modify, vector<double
     } else {
         rhs_direct_sum(run_information, modify, dynamics_state, dynamics_areas, time, omega);
     }
-    scalar_mult(modify, -1.0 / (4.0 * M_PI));
+    // scalar_mult(modify, -1.0 / (4.0 * M_PI));
     for (int i = 0; i < run_information.dynamics_curr_point_count; i++) modify[run_information.info_per_point * i + 3] = -2 * omega * modify[run_information.info_per_point * i + 2];
 }
 

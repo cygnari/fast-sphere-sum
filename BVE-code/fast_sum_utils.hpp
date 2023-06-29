@@ -3,6 +3,7 @@
 
 #include "general_utils.hpp"
 #include "structs.hpp"
+#include "green_funcs.hpp"
 
 void point_assign(run_config& run_information, vector<double>& point, vector<vector<double>>& fast_sum_icos_verts,
         vector<vector<vector<int>>>& fast_sum_icos_tri_verts, vector<vector<vector<int>>>& fast_sum_tree_tri_points,

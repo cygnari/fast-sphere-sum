@@ -269,13 +269,6 @@ double tri_radius(vector<double>& p1, vector<double>& p2, vector<double>& p3, ve
     return max(max(radius1, radius2), radius3);
 }
 
-vector<double> BVE_gfunc(vector<double>& x, vector<double>& y) { // interaction function for barotropic vorticity equations
-    double denom = 1.0 - dot_prod(x, y);
-    vector<double> cross_prod = cross_product(x, y);
-    scalar_mult(cross_prod, 1.0 / denom);
-    return cross_prod;
-}
-
 void replace(vector<int>& vals, int find, int replacement) { // replace find in vals with replacement
     for (int i = 0; i < vals.size(); i++) {
         if (vals[i] == find) {

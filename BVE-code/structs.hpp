@@ -26,7 +26,7 @@ struct run_config {
     int init_cond_param1; // parameter for initial condition
     double init_cond_param2; // parameter for initial condition
     // for RH, ICP1 is wavenumber, ICP2 is wave speed, default ICP1 = 4, ICP2 = 0
-    // for GV, ICP1 is radius parameter, ICP2 is starting latitude * pi, default ICP1 = 1, ICP2 = 0.05
+    // for GV, ICP1 is radius parameter, ICP2 is starting latitude * pi, default ICP1 = 4, ICP2 = 0.05
     // for RV, default ICP1 = 10, ICP2 = 0.05
     int forcing_param1; // parameter for forcing
     double forcing_param2; // parameter for forcing
