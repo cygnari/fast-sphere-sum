@@ -41,7 +41,6 @@ void rankine_vortex(run_config& run_information, vector<double>& dynamics_state)
     double center_lon = 0.0;
     double vor_radius = run_information.init_cond_param1 * 0.01 * run_information.radius;
     double scale_cons = 4.0 * M_PI * vor_radius;
-    cout << vor_radius << endl;
     for (int i = 0; i < run_information.dynamics_initial_points; i++) {
         curr_pos = slice(dynamics_state, run_information.info_per_point * i, 1, 3);
         latlon = lat_lon(curr_pos);
@@ -51,7 +50,6 @@ void rankine_vortex(run_config& run_information, vector<double>& dynamics_state)
         dist = vec_norm(p1);
         if (dist < vor_radius) {
             val = dist / pow(vor_radius, 2);
-            cout << dist << " " << val << endl;
         } else {
             val = 1.0 / dist;
         }
