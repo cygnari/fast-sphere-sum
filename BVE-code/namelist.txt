@@ -1,4 +1,4 @@
-use_amr=0
+use_amr=1
 use_remesh=1
 use_fast=1
 force_conservative=1
@@ -11,7 +11,7 @@ write_stream=0
 radius=1.0
 end_time=0.01
 delta_t=0.01
-dynamics_levels_min=6
+dynamics_levels_min=5
 amr_levels_max=3
 initial_vor_condition=rv
 vor_force=none
