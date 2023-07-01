@@ -15,7 +15,7 @@
 #include "green_funcs.hpp"
 
 using namespace std;
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 
 double omega = 2 * M_PI; // 2pi rotation/day
 

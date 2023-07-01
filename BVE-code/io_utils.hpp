@@ -4,7 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include "structs.hpp"
-#include <experimental/filesystem>
+// #include <filesystem>
 
 void write_state(run_config& run_information, vector<double>& dynamics_state, vector<double>& dynamics_area, ofstream& file_writer1, ofstream& file_writer2) {
     for (int i = 0; i < run_information.dynamics_curr_point_count; i++) { // write out initial state
