@@ -122,6 +122,7 @@ void read_run_config(string file_name, run_config& run_information) {
             run_information.dynamics_curr_point_count = run_information.dynamics_initial_points;
             run_information.dynamics_curr_tri_count = run_information.dynamics_initial_triangles;
             run_information.interp_point_count = int((1 + run_information.interp_degree) * (2 + run_information.interp_degree) / 2);
+            if (run_information.write_stream) run_information.info_per_point += 1;
             return;
         }
     }

@@ -15,7 +15,7 @@ struct run_config {
     int write_precision = 6; // number of decimal places, 6 for data visualization, 16 for error testing
     bool write_output = false;
     bool write_tris = false;
-    bool write_stream = false;
+    bool write_stream = false; // compute and write stream function at each time step
     double radius = 1.0;
     double end_time; // in days
     double delta_t; // time step size
