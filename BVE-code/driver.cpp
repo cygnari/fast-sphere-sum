@@ -110,10 +110,10 @@ int main(int argc, char** argv) {
     vector<ofstream*> write_outs1 (ceil(run_information.end_time));
     vector<ofstream*> write_outs3 (ceil(run_information.end_time));
 
-    auto created_new_directory = std::filesystem::create_directory(run_information.out_path + "/" + output_filename);
+    if (ID == 0) {
+        auto created_new_directory = std::filesystem::create_directory(run_information.out_path + "/" + output_filename);
+    }
 
-    // ofstream write_out2(run_information.out_path + "point_counts_" + output_filename + ".csv", ofstream::out | ofstream::trunc);
-    // ofstream write_out4(run_information.out_path + "tri_count_" + output_filename + ".csv", ofstream::out | ofstream::trunc);
     ofstream write_out2(run_information.out_path + "/" + output_filename + "/point_counts.csv", ofstream::out | ofstream::trunc);
     ofstream write_out4(run_information.out_path + "/" + output_filename + "/tri_counts.csv", ofstream::out | ofstream::trunc);
 
@@ -161,8 +161,6 @@ int main(int argc, char** argv) {
     write_out_init1.close();
     write_out_init3.close();
 
-
-
     if (ID == 0) {
         begin = chrono::steady_clock::now();
     }
@@ -178,6 +176,14 @@ int main(int argc, char** argv) {
             project_points(run_information, dynamics_state, omega);
             inter_state.resize(run_information.dynamics_curr_point_count * run_information.info_per_point);
             bounds_determine(run_information, P, ID);
+            if (run_information.use_fast) {
+                fast_sum_tree_point_locs.clear();
+                fast_sum_tree_tri_points.clear();
+                fast_sum_tree_tri_points.resize(run_information.fast_sum_tree_levels);
+                fast_sum_tree_point_locs.resize(run_information.fast_sum_tree_levels);
+                points_assign(run_information, inter_state, fast_sum_icos_verts, fast_sum_icos_tri_verts, fast_sum_tree_tri_points, fast_sum_tree_point_locs);
+                tree_traverse(run_information, fast_sum_tree_tri_points, fast_sum_icos_tri_info, fast_sum_tree_interactions);
+            }
         }
 
         MPI_Barrier(MPI_COMM_WORLD);
